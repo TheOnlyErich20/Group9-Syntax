@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Darkboard</title>
+    <link rel="stylesheet" href="Darkboard.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gravitas+One&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+</head>
+<body>
+    
+<header>
+    <a href="index.html" class="brand">DARKBOARD</a>
+    <div class="header-right">
+        <div class="theme-toggle">
+            <button class="theme-btn" id="darkModeBtn" onclick="applyTheme('dark')" title="Dark Mode">
+                <i class="fas fa-moon"></i>
+            </button>
+            <button class="theme-btn" id="lightModeBtn" onclick="applyTheme('light')" title="Light Mode">
+                <i class="fas fa-sun"></i>
+            </button>
+        </div>
+    </div>
+</header>
+
+<section class="login-section">
+    <div class="login-container">
+        <div class="login-box">
+            <div class="login-header">
+                <div class="login-icon">
+                    <i class="fas fa-user-plus"></i>
+                </div>
+                <h1>Create Account</h1>
+                <p>Join Darkboard and track your academic journey</p>
+            </div>
+
+            <form class="login-form" id="signupForm">
+                <div class="form-group">
+                    <label for="fullName"><i class="fas fa-user"></i> Full Name</label>
+                    <input type="text" id="fullName" placeholder="John Michael Doe" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="studentId"><i class="fas fa-id-card"></i> Student ID</label>
+                    <input type="text" id="studentId" placeholder="2024-00123" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="signupEmail"><i class="fas fa-envelope"></i> Email</label>
+                    <input type="email" id="signupEmail" placeholder="your.email@icct.edu.ph" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone"><i class="fas fa-phone"></i> Phone Number</label>
+                    <input type="tel" id="phone" placeholder="+63 912 345 6789">
+                </div>
+
+                <div class="form-group">
+                    <label for="course"><i class="fas fa-graduation-cap"></i> Course/Program</label>
+                    <input type="text" id="course" placeholder="BS Information Technology" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="signupPassword"><i class="fas fa-lock"></i> Password</label>
+                    <input type="password" id="signupPassword" placeholder="••••••••" required>
+                    <span class="toggle-password" onclick="toggleSignupPassword()">
+                        <i class="fas fa-eye"></i>
+                    </span>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword"><i class="fas fa-lock"></i> Confirm Password</label>
+                    <input type="password" id="confirmPassword" placeholder="••••••••" required>
+                    <span class="toggle-password" onclick="toggleConfirmPassword()">
+                        <i class="fas fa-eye"></i>
+                    </span>
+                </div>
+
+                <button type="submit" class="login-btn">Create Account</button>
+            </form>
+
+            <div class="login-footer">
+                <p>Already have an account? <a href="Login.html" class="signup-link">Sign in here</a></p>
+            </div>
+        </div>
+
+        <div class="login-info">
+            <h2>Get Started Today</h2>
+            <ul class="features">
+                <li>
+                    <i class="fas fa-check-circle"></i>
+                    <span>Quick and easy account creation</span>
+                </li>
+                <li>
+                    <i class="fas fa-check-circle"></i>
+                    <span>Track all your subjects and grades</span>
+                </li>
+                <li>
+                    <i class="fas fa-check-circle"></i>
+                    <span>Monitor your academic progress</span>
+                </li>
+                <li>
+                    <i class="fas fa-check-circle"></i>
+                    <span>Access class schedules and assignments</span>
+                </li>
+                <li>
+                    <i class="fas fa-check-circle"></i>
+                    <span>Stay connected with your school</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<script src="script.js"></script>
+
+</body>
+</html>
