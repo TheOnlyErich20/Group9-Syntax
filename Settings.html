@@ -20,7 +20,7 @@
             <input type="text" placeholder="Search settings...">
         </div>
         <div class="header-user">
-            <button class="user-btn" onclick="toggleUserMenu()">
+            <button class="user-btn" id="userBtn">
                 <img id="headerUserImg" src="https://via.placeholder.com/40/0b1f2e/00d4ff?text=👨" alt="User" class="user-avatar">
                 <span id="headerUserName">John Doe</span>
                 <i class="fas fa-chevron-down"></i>
@@ -30,8 +30,16 @@
                 <a href="Settings.html"><i class="fas fa-cog"></i> Settings</a>
                 <a href="#"><i class="fas fa-question-circle"></i> Help</a>
                 <hr>
-                <a href="Login.html" onclick="handleLogout(event)"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                <a href="Login.html" onclick="logout(event)"><i class="fas fa-sign-out-alt"></i> Logout</a>
             </div>
+        </div>
+        <div class="theme-toggle">
+            <button class="theme-btn" id="darkModeBtn" title="Dark Mode">
+                <i class="fas fa-moon"></i>
+            </button>
+            <button class="theme-btn" id="lightModeBtn" title="Light Mode">
+                <i class="fas fa-sun"></i>
+            </button>
         </div>
     </div>
 </header>
@@ -85,11 +93,11 @@
                                 <p>Switch between light and dark mode</p>
                             </div>
                             <div class="theme-options">
-                                <button class="theme-btn" id="lightModeBtn" data-theme="light">
+                                <button class="theme-btn" id="lightThemeBtn" data-theme="light">
                                     <i class="fas fa-sun"></i>
                                     <span>Light</span>
                                 </button>
-                                <button class="theme-btn active" id="darkModeBtn" data-theme="dark">
+                                <button class="theme-btn" id="darkThemeBtn" data-theme="dark">
                                     <i class="fas fa-moon"></i>
                                     <span>Dark</span>
                                 </button>
@@ -188,6 +196,15 @@
 </div>
 
 <script type="module" src="script.js"></script>
+<script>
+    // USER MENU TOGGLE
+    const userBtn = document.getElementById('userBtn');
+    const userMenu = document.getElementById('userMenu');
+
+    userBtn?.addEventListener('click', () => {
+        userMenu.classList.toggle('show');
+    });
+</script>
 
 </body>
 </html>
