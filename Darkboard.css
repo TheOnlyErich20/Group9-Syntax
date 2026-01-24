@@ -3000,3 +3000,6 @@ body.light-mode .forgot-password:hover {
         gap: 15px;
     }
 }
+.theme-btn i {
+    pointer-events: none; /* lets clicks pass through the icon to the button */
+}
