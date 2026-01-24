@@ -1,10 +1,15 @@
-// Import Firebase auth from firebase.js
+// ---------------------------
+// Firebase Auth & Firestore
+// ---------------------------
 import { auth } from './firebase.js';
-import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-/* =========================
-   THEME TOGGLE
-========================= */
+const db = getFirestore();
+
+// ---------------------------
+// Theme Functions
+// ---------------------------
 function initializeTheme() {
     const theme = localStorage.getItem("theme") || "dark";
     document.body.classList.toggle("light-mode", theme === "light");
@@ -21,13 +26,24 @@ function applyTheme(theme) {
 function updateThemeButtons(theme) {
     const darkBtn = document.getElementById("darkModeBtn");
     const lightBtn = document.getElementById("lightModeBtn");
-    darkBtn.classList.toggle("active", theme === "dark");
-    lightBtn.classList.toggle("active", theme === "light");
+    darkBtn?.classList.toggle("active", theme === "dark");
+    lightBtn?.classList.toggle("active", theme === "light");
 }
 
-/* =========================
-   LOGIN UI
-========================= */
+// ---------------------------
+// Password Toggle
+// ---------------------------
+function togglePassword(inputId, iconId) {
+    const input = document.getElementById(inputId);
+    const icon = document.querySelector(`#${iconId} i`);
+    if (!input || !icon) return;
+    input.type = input.type === "password" ? "text" : "password";
+    icon.classList.toggle("fa-eye-slash");
+}
+
+// ---------------------------
+// Login Message Helper
+// ---------------------------
 function setMessage(id, msg, success) {
     const el = document.getElementById(id);
     if (!el) return;
@@ -36,25 +52,26 @@ function setMessage(id, msg, success) {
     el.style.color = success ? "#51cf66" : "#ff6b6b";
 }
 
-/* =========================
-   DOM READY
-========================= */
+// ---------------------------
+// DOM Ready
+// ---------------------------
 document.addEventListener("DOMContentLoaded", () => {
     initializeTheme();
 
-    // Theme buttons
+    // Theme Buttons
     document.getElementById("darkModeBtn")?.addEventListener("click", () => applyTheme("dark"));
     document.getElementById("lightModeBtn")?.addEventListener("click", () => applyTheme("light"));
 
-    // Password toggle
-    document.getElementById("togglePassword")?.addEventListener("click", () => {
-        const pwd = document.getElementById("password");
-        pwd.type = pwd.type === "password" ? "text" : "password";
-        document.querySelector("#togglePassword i")?.classList.toggle("fa-eye-slash");
-    });
+    // Password Toggles
+    document.getElementById("togglePassword")?.addEventListener("click", () => togglePassword("password", "togglePassword"));
+    document.getElementById("toggleSignupPassword")?.addEventListener("click", () => togglePassword("signupPassword", "toggleSignupPassword"));
+    document.getElementById("toggleConfirmPassword")?.addEventListener("click", () => togglePassword("confirmPassword", "toggleConfirmPassword"));
 
-    // Login form
-    document.getElementById("loginForm")?.addEventListener("submit", async e => {
+    // ---------------------------
+    // LOGIN FORM
+    // ---------------------------
+    const loginForm = document.getElementById("loginForm");
+    loginForm?.addEventListener("submit", async (e) => {
         e.preventDefault();
         const email = document.getElementById("email").value.trim();
         const password = document.getElementById("password").value.trim();
@@ -77,79 +94,12 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (err) {
             setMessage("loginError", err.message, false);
         }
-       document.addEventListener("DOMContentLoaded", () => {
     });
-});
-/* =========================
-   DASHBOARD HEADER / USER MENU
-========================= */
-function initializeDashboard() {
-    const user = JSON.parse(localStorage.getItem("userData"));
-    const userNameEl = document.getElementById("headerUserName");
-    const dashboardNameEl = document.getElementById("dashboardUserName");
-    const greetingEl = document.getElementById("greetingMessage");
 
-    if (user) {
-        if (userNameEl) userNameEl.textContent = user.name;
-        if (dashboardNameEl) dashboardNameEl.textContent = user.name.split(" ")[0]; // first name
-    }
-
-    if (greetingEl) {
-        const h = new Date().getHours();
-        greetingEl.textContent =
-            h < 12 ? "Good morning 🌅" :
-            h < 17 ? "Good afternoon ☀️" :
-                     "Good evening 🌙";
-    }
-}
-
-/* =========================
-   LOGOUT
-========================= */
-function logout(e) {
-    if (e) e.preventDefault();
-    localStorage.clear();
-    location.href = "Login.html";
-}
-
-/* =========================
-   TOGGLE USER MENU
-========================= */
-function toggleUserMenu() {
-    const menu = document.getElementById("userMenu");
-    menu.classList.toggle("active");
-}
-
-// Open/close menu when clicking user button
-document.getElementById("userBtn")?.addEventListener("click", toggleUserMenu);
-
-// Close menu if clicking outside
-document.addEventListener("click", (e) => {
-    const menu = document.getElementById("userMenu");
-    const button = document.getElementById("userBtn");
-    if (!menu.contains(e.target) && !button.contains(e.target)) {
-        menu.classList.remove("active");
-    }
-});
-
-/* =========================
-   Initialize on page load
-========================= */
-document.addEventListener("DOMContentLoaded", () => {
-    initializeDashboard();
-});
-/* =========================
-   SIGNUP FORM
-========================= */
-import { createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-
-const db = getFirestore();
-
-document.addEventListener("DOMContentLoaded", () => {
+    // ---------------------------
+    // SIGNUP FORM
+    // ---------------------------
     const signupForm = document.getElementById("signupForm");
-    const signupMessage = document.getElementById("signupMessage"); // Make sure this div exists in your HTML
-
     signupForm?.addEventListener("submit", async (e) => {
         e.preventDefault();
 
@@ -159,8 +109,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const confirmPassword = document.getElementById("confirmPassword").value;
         const phone = document.getElementById("phone").value.trim();
         const course = document.getElementById("course").value.trim();
+        const signupMessage = document.getElementById("signupMessage");
 
-        // VALIDATIONS
         if (!fullName || !email || !password || !confirmPassword || !course) {
             signupMessage.style.color = "#ff6b6b";
             signupMessage.textContent = "Please fill in all required fields.";
@@ -183,14 +133,11 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
-            // Create user in Firebase Auth
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
-            // Update display name
             await updateProfile(user, { displayName: fullName });
 
-            // Store extra info in Firestore
             await setDoc(doc(db, "students", user.uid), {
                 fullName,
                 email,
@@ -211,12 +158,4 @@ document.addEventListener("DOMContentLoaded", () => {
             signupMessage.style.display = "block";
         }
     });
-
-    // Password toggles
-    document.getElementById("toggleSignupPassword")?.addEventListener("click", () => 
-        togglePassword("signupPassword", "toggleSignupPassword")
-    );
-    document.getElementById("toggleConfirmPassword")?.addEventListener("click", () => 
-        togglePassword("confirmPassword", "toggleConfirmPassword")
-    );
 });
