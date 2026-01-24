@@ -178,22 +178,18 @@ function applyTheme(theme) {
 ========================= */
 document.addEventListener("DOMContentLoaded", () => {
     initializeTheme();
-    initializeUser();
-    updateDashboardGreeting();
 
-    document.getElementById("loginForm")
-        ?.addEventListener("submit", handleLoginSubmit);
-
-    document.getElementById("signupForm")
-        ?.addEventListener("submit", handleSignupSubmit);
-
-    // 🔥 ADD THESE
+    // Theme toggle buttons
     document.getElementById("darkModeBtn")
         ?.addEventListener("click", () => applyTheme("dark"));
-
     document.getElementById("lightModeBtn")
         ?.addEventListener("click", () => applyTheme("light"));
+
+    // Login form
+    document.getElementById("loginForm")
+        ?.addEventListener("submit", handleLoginSubmit);
 });
+
 firebase.auth().onAuthStateChanged(user => {
     const page = location.pathname.split("/").pop().toLowerCase();
     if (!user && page !== "login.html" && page !== "signup.html") {
