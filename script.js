@@ -195,3 +195,14 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("lightModeBtn")
         ?.addEventListener("click", () => applyTheme("light"));
 });
+// Make applyTheme globally accessible (for buttons if needed)
+window.applyTheme = applyTheme;
+
+// Ensure buttons work even in module
+const darkBtn = document.getElementById("darkModeBtn");
+const lightBtn = document.getElementById("lightModeBtn");
+
+if (darkBtn && lightBtn) {
+    darkBtn.addEventListener("click", () => applyTheme("dark"));
+    lightBtn.addEventListener("click", () => applyTheme("light"));
+}
