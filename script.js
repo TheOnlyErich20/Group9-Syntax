@@ -20,10 +20,23 @@ function applyTheme(theme) {
     else document.body.classList.remove("light-mode");
     localStorage.setItem("theme", theme);
 
-    const darkBtn = document.getElementById("darkModeBtn");
-    const lightBtn = document.getElementById("lightModeBtn");
-    darkBtn?.classList.toggle("active", theme === "dark");
-    lightBtn?.classList.toggle("active", theme === "light");
+    const darkBtn = document.getElementById("darkModeBtn") || document.getElementById("darkThemeBtn");
+    const lightBtn = document.getElementById("lightModeBtn") || document.getElementById("lightThemeBtn");
+
+    // Remove active from all
+    [document.getElementById("darkModeBtn"), document.getElementById("lightModeBtn"), 
+     document.getElementById("darkThemeBtn"), document.getElementById("lightThemeBtn")].forEach(btn => {
+        if (btn) btn.classList.remove("active");
+    });
+
+    // Add active to the correct button
+    if (theme === "dark") {
+        document.getElementById("darkModeBtn")?.classList.add("active");
+        document.getElementById("darkThemeBtn")?.classList.add("active");
+    } else {
+        document.getElementById("lightModeBtn")?.classList.add("active");
+        document.getElementById("lightThemeBtn")?.classList.add("active");
+    }
 }
 
 // =========================
@@ -73,7 +86,6 @@ function initializeLogin() {
 // =========================
 function initializeSignup() {
     const signupForm = document.getElementById("signupForm");
-    const signupMessage = document.getElementById("signupMessage");
 
     signupForm?.addEventListener("submit", async e => {
         e.preventDefault();
@@ -182,12 +194,14 @@ document.addEventListener("DOMContentLoaded", () => {
     initializePasswordToggles();
     initializeDashboard();
 
-    // Theme buttons
+    // THEME BUTTONS FOR MULTIPLE PAGES
     document.getElementById("darkModeBtn")?.addEventListener("click", () => applyTheme("dark"));
     document.getElementById("lightModeBtn")?.addEventListener("click", () => applyTheme("light"));
+    document.getElementById("darkThemeBtn")?.addEventListener("click", () => applyTheme("dark"));
+    document.getElementById("lightThemeBtn")?.addEventListener("click", () => applyTheme("light"));
 });
 
 // =========================
-// EXPORT LOGOUT FOR DASHBOARD
+// EXPORT LOGOUT & THEME
 // =========================
 export { logout, applyTheme };
