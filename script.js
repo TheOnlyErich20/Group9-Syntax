@@ -1,7 +1,7 @@
 /* =========================
    GLOBAL CONFIG
 ========================= */
-const API_URL = "http://localhost:3000/api";
+import { auth } from "./firebase.js";
 
 /* =========================
    AUTH GUARD
@@ -22,8 +22,8 @@ checkLoginStatus();
 async function handleLoginSubmit(e) {
     e.preventDefault();
 
-    const email = document.getElementById("email")?.value.trim();
-    const password = document.getElementById("password")?.value.trim();
+    const email = val("email");
+    const password = val("password");
 
     if (!email || !password) {
         showLoginError("Please fill in all fields");
@@ -31,28 +31,18 @@ async function handleLoginSubmit(e) {
     }
 
     try {
-        const res = await fetch(`${API_URL}/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password })
-        });
-
-        const data = await res.json();
-
-        if (!data.success) {
-            showLoginError(data.message || "Invalid credentials");
-            return;
-        }
+        const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
+        const user = userCredential.user;
 
         localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("userData", JSON.stringify(data.user));
-        localStorage.setItem("userId", data.user.id);
+        localStorage.setItem("userData", JSON.stringify({ id: user.uid, name: user.displayName || email }));
+        localStorage.setItem("userId", user.uid);
 
         showLoginSuccess("Login successful! Redirecting...");
         setTimeout(() => location.href = "index.html", 1200);
 
-    } catch {
-        showLoginError("Server connection failed");
+    } catch (err) {
+        showLoginError(err.message);
     }
 }
 
@@ -79,30 +69,21 @@ async function handleSignupSubmit(e) {
     }
 
     try {
-        const res = await fetch(`${API_URL}/signup`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                email,
-                password,
-                name: fullName.split(" ")[0],
-                fullName,
-                course
-            })
-        });
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
+        const user = userCredential.user;
 
-        const data = await res.json();
+        // Update display name
+        await user.updateProfile({ displayName: fullName.split(" ")[0] });
 
-        if (!data.success) {
-            showSignupError(data.message || "Signup failed");
-            return;
-        }
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("userData", JSON.stringify({ id: user.uid, name: fullName.split(" ")[0], fullName, course }));
+        localStorage.setItem("userId", user.uid);
 
         showSignupSuccess("Account created! Redirecting...");
         setTimeout(() => location.href = "Login.html", 1200);
 
-    } catch {
-        showSignupError("Server connection failed");
+    } catch (err) {
+        showSignupError(err.message);
     }
 }
 
@@ -212,4 +193,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("lightModeBtn")
         ?.addEventListener("click", () => applyTheme("light"));
+});
+firebase.auth().onAuthStateChanged(user => {
+    const page = location.pathname.split("/").pop().toLowerCase();
+    if (!user && page !== "login.html" && page !== "signup.html") {
+        location.href = "Login.html";
+    }
 });
