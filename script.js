@@ -1,59 +1,6 @@
-/* =========================
-   AUTH GUARD
-========================= */
+// Import Firebase auth from firebase.js
 import { auth } from './firebase.js';
-
-// Example login:
-auth.signInWithEmailAndPassword(email, password)
-firebase.auth().onAuthStateChanged(user => {
-    const page = location.pathname.split("/").pop().toLowerCase();
-    if (!user && page !== "login.html" && page !== "signup.html") {
-        location.href = "Login.html";
-    }
-});
-
-/* =========================
-   LOGIN
-========================= */
-async function handleLoginSubmit(e) {
-    e.preventDefault();
-
-    const email = val("email");
-    const password = val("password");
-
-    if (!email || !password) {
-        showLoginError("Please fill in all fields");
-        return;
-    }
-
-    try {
-        const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
-        const user = userCredential.user;
-
-        localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("userData", JSON.stringify({ id: user.uid, name: user.displayName || email }));
-        localStorage.setItem("userId", user.uid);
-
-        showLoginSuccess("Login successful! Redirecting...");
-        setTimeout(() => location.href = "index.html", 1200);
-
-    } catch (err) {
-        showLoginError(err.message);
-    }
-}
-
-/* =========================
-   UI HELPERS
-========================= */
-function showLoginError(msg) { setMessage("loginError", msg, false); }
-function showLoginSuccess(msg) { setMessage("loginSuccess", msg, true); }
-function setMessage(id, msg, success) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.textContent = msg;
-    el.style.display = "block";
-    el.style.color = success ? "#51cf66" : "#ff6b6b";
-}
+import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
 /* =========================
    THEME TOGGLE
@@ -65,11 +12,8 @@ function initializeTheme() {
 }
 
 function applyTheme(theme) {
-    if (theme === "light") {
-        document.body.classList.add("light-mode");
-    } else {
-        document.body.classList.remove("light-mode");
-    }
+    if (theme === "light") document.body.classList.add("light-mode");
+    else document.body.classList.remove("light-mode");
     localStorage.setItem("theme", theme);
     updateThemeButtons(theme);
 }
@@ -77,26 +21,61 @@ function applyTheme(theme) {
 function updateThemeButtons(theme) {
     const darkBtn = document.getElementById("darkModeBtn");
     const lightBtn = document.getElementById("lightModeBtn");
-    if (!darkBtn || !lightBtn) return;
     darkBtn.classList.toggle("active", theme === "dark");
     lightBtn.classList.toggle("active", theme === "light");
+}
+
+/* =========================
+   LOGIN UI
+========================= */
+function setMessage(id, msg, success) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = msg;
+    el.style.display = "block";
+    el.style.color = success ? "#51cf66" : "#ff6b6b";
 }
 
 /* =========================
    DOM READY
 ========================= */
 document.addEventListener("DOMContentLoaded", () => {
-    // Initialize theme
     initializeTheme();
 
-    // Theme toggle buttons
-    document.getElementById("darkModeBtn")
-        ?.addEventListener("click", () => applyTheme("dark"));
-    document.getElementById("lightModeBtn")
-        ?.addEventListener("click", () => applyTheme("light"));
-});
+    // Theme buttons
+    document.getElementById("darkModeBtn")?.addEventListener("click", () => applyTheme("dark"));
+    document.getElementById("lightModeBtn")?.addEventListener("click", () => applyTheme("light"));
 
-/* =========================
-   UTILS
-========================= */
-const val = id => document.getElementById(id)?.value.trim();
+    // Password toggle
+    document.getElementById("togglePassword")?.addEventListener("click", () => {
+        const pwd = document.getElementById("password");
+        pwd.type = pwd.type === "password" ? "text" : "password";
+        document.querySelector("#togglePassword i")?.classList.toggle("fa-eye-slash");
+    });
+
+    // Login form
+    document.getElementById("loginForm")?.addEventListener("submit", async e => {
+        e.preventDefault();
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value.trim();
+
+        if (!email || !password) {
+            setMessage("loginError", "Please fill in all fields", false);
+            return;
+        }
+
+        try {
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+
+            localStorage.setItem("isLoggedIn", "true");
+            localStorage.setItem("userData", JSON.stringify({ id: user.uid, name: user.displayName || email }));
+            localStorage.setItem("userId", user.uid);
+
+            setMessage("loginSuccess", "Login successful! Redirecting...", true);
+            setTimeout(() => location.href = "index.html", 1200);
+        } catch (err) {
+            setMessage("loginError", err.message, false);
+        }
+    });
+});
