@@ -56,7 +56,7 @@ function setMessage(id, msg, success) {
 }
 
 /* =========================
-   THEME
+   THEME TOGGLE
 ========================= */
 function initializeTheme() {
     const theme = localStorage.getItem("theme") || "dark";
@@ -82,6 +82,7 @@ function updateThemeButtons(theme) {
    DOM READY
 ========================= */
 document.addEventListener("DOMContentLoaded", () => {
+    // Initialize theme
     initializeTheme();
 
     // Theme toggle buttons
@@ -89,10 +90,6 @@ document.addEventListener("DOMContentLoaded", () => {
         ?.addEventListener("click", () => applyTheme("dark"));
     document.getElementById("lightModeBtn")
         ?.addEventListener("click", () => applyTheme("light"));
-
-    // Login form
-    document.getElementById("loginForm")
-        ?.addEventListener("submit", handleLoginSubmit);
 });
 
 /* =========================
