@@ -1,50 +1,35 @@
-// ---------------------------
-// Firebase Auth & Firestore
-// ---------------------------
+// =========================
+// IMPORT FIREBASE AUTH
+// =========================
 import { auth } from './firebase.js';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 const db = getFirestore();
 
-// ---------------------------
-// Theme Functions
-// ---------------------------
+// =========================
+// THEME TOGGLE
+// =========================
 function initializeTheme() {
     const theme = localStorage.getItem("theme") || "dark";
-    document.body.classList.toggle("light-mode", theme === "light");
-    updateThemeButtons(theme);
+    applyTheme(theme);
 }
 
 function applyTheme(theme) {
     if (theme === "light") document.body.classList.add("light-mode");
     else document.body.classList.remove("light-mode");
     localStorage.setItem("theme", theme);
-    updateThemeButtons(theme);
-}
 
-function updateThemeButtons(theme) {
     const darkBtn = document.getElementById("darkModeBtn");
     const lightBtn = document.getElementById("lightModeBtn");
     darkBtn?.classList.toggle("active", theme === "dark");
     lightBtn?.classList.toggle("active", theme === "light");
 }
 
-// ---------------------------
-// Password Toggle
-// ---------------------------
-function togglePassword(inputId, iconId) {
-    const input = document.getElementById(inputId);
-    const icon = document.querySelector(`#${iconId} i`);
-    if (!input || !icon) return;
-    input.type = input.type === "password" ? "text" : "password";
-    icon.classList.toggle("fa-eye-slash");
-}
-
-// ---------------------------
-// Login Message Helper
-// ---------------------------
-function setMessage(id, msg, success) {
+// =========================
+// LOGIN / SIGNUP MESSAGES
+// =========================
+function setMessage(id, msg, success = false) {
     const el = document.getElementById(id);
     if (!el) return;
     el.textContent = msg;
@@ -52,32 +37,18 @@ function setMessage(id, msg, success) {
     el.style.color = success ? "#51cf66" : "#ff6b6b";
 }
 
-// ---------------------------
-// DOM Ready
-// ---------------------------
-document.addEventListener("DOMContentLoaded", () => {
-    initializeTheme();
-
-    // Theme Buttons
-    document.getElementById("darkModeBtn")?.addEventListener("click", () => applyTheme("dark"));
-    document.getElementById("lightModeBtn")?.addEventListener("click", () => applyTheme("light"));
-
-    // Password Toggles
-    document.getElementById("togglePassword")?.addEventListener("click", () => togglePassword("password", "togglePassword"));
-    document.getElementById("toggleSignupPassword")?.addEventListener("click", () => togglePassword("signupPassword", "toggleSignupPassword"));
-    document.getElementById("toggleConfirmPassword")?.addEventListener("click", () => togglePassword("confirmPassword", "toggleConfirmPassword"));
-
-    // ---------------------------
-    // LOGIN FORM
-    // ---------------------------
+// =========================
+// LOGIN FUNCTIONALITY
+// =========================
+function initializeLogin() {
     const loginForm = document.getElementById("loginForm");
-    loginForm?.addEventListener("submit", async (e) => {
+    loginForm?.addEventListener("submit", async e => {
         e.preventDefault();
         const email = document.getElementById("email").value.trim();
         const password = document.getElementById("password").value.trim();
 
         if (!email || !password) {
-            setMessage("loginError", "Please fill in all fields", false);
+            setMessage("loginError", "Please fill in all fields");
             return;
         }
 
@@ -85,22 +56,26 @@ document.addEventListener("DOMContentLoaded", () => {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
+            // Store logged-in user in localStorage
             localStorage.setItem("isLoggedIn", "true");
             localStorage.setItem("userData", JSON.stringify({ id: user.uid, name: user.displayName || email }));
-            localStorage.setItem("userId", user.uid);
 
             setMessage("loginSuccess", "Login successful! Redirecting...", true);
             setTimeout(() => location.href = "index.html", 1200);
         } catch (err) {
-            setMessage("loginError", err.message, false);
+            setMessage("loginError", err.message);
         }
     });
+}
 
-    // ---------------------------
-    // SIGNUP FORM
-    // ---------------------------
+// =========================
+// SIGNUP FUNCTIONALITY
+// =========================
+function initializeSignup() {
     const signupForm = document.getElementById("signupForm");
-    signupForm?.addEventListener("submit", async (e) => {
+    const signupMessage = document.getElementById("signupMessage");
+
+    signupForm?.addEventListener("submit", async e => {
         e.preventDefault();
 
         const fullName = document.getElementById("fullName").value.trim();
@@ -109,26 +84,19 @@ document.addEventListener("DOMContentLoaded", () => {
         const confirmPassword = document.getElementById("confirmPassword").value;
         const phone = document.getElementById("phone").value.trim();
         const course = document.getElementById("course").value.trim();
-        const signupMessage = document.getElementById("signupMessage");
 
         if (!fullName || !email || !password || !confirmPassword || !course) {
-            signupMessage.style.color = "#ff6b6b";
-            signupMessage.textContent = "Please fill in all required fields.";
-            signupMessage.style.display = "block";
+            setMessage("signupMessage", "Please fill in all required fields");
             return;
         }
 
         if (password !== confirmPassword) {
-            signupMessage.style.color = "#ff6b6b";
-            signupMessage.textContent = "Passwords do not match.";
-            signupMessage.style.display = "block";
+            setMessage("signupMessage", "Passwords do not match");
             return;
         }
 
         if (password.length < 6) {
-            signupMessage.style.color = "#ff6b6b";
-            signupMessage.textContent = "Password must be at least 6 characters.";
-            signupMessage.style.display = "block";
+            setMessage("signupMessage", "Password must be at least 6 characters");
             return;
         }
 
@@ -147,15 +115,79 @@ document.addEventListener("DOMContentLoaded", () => {
                 createdAt: serverTimestamp()
             });
 
-            signupMessage.style.color = "#51cf66";
-            signupMessage.textContent = "Account created successfully! Redirecting to login...";
-            signupMessage.style.display = "block";
-
+            setMessage("signupMessage", "Account created successfully! Redirecting...", true);
             setTimeout(() => window.location.href = "Login.html", 1500);
+
         } catch (err) {
-            signupMessage.style.color = "#ff6b6b";
-            signupMessage.textContent = err.message;
-            signupMessage.style.display = "block";
+            setMessage("signupMessage", err.message);
         }
     });
+}
+
+// =========================
+// PASSWORD TOGGLE
+// =========================
+function initializePasswordToggles() {
+    function togglePassword(inputId, iconId) {
+        const input = document.getElementById(inputId);
+        const icon = document.querySelector(`#${iconId} i`);
+        if (!input || !icon) return;
+        input.type = input.type === "password" ? "text" : "password";
+        icon.classList.toggle("fa-eye-slash");
+    }
+
+    document.getElementById("togglePassword")?.addEventListener("click", () => togglePassword("password", "togglePassword"));
+    document.getElementById("toggleSignupPassword")?.addEventListener("click", () => togglePassword("signupPassword", "toggleSignupPassword"));
+    document.getElementById("toggleConfirmPassword")?.addEventListener("click", () => togglePassword("confirmPassword", "toggleConfirmPassword"));
+}
+
+// =========================
+// DASHBOARD USER INFO
+// =========================
+function initializeDashboard() {
+    const userData = JSON.parse(localStorage.getItem("userData"));
+    if (!userData) return;
+
+    const userNameEl = document.getElementById("headerUserName");
+    const dashboardNameEl = document.getElementById("dashboardUserName");
+    const greetingEl = document.getElementById("greetingMessage");
+
+    if (userNameEl) userNameEl.textContent = userData.name;
+    if (dashboardNameEl) dashboardNameEl.textContent = userData.name.split(" ")[0];
+
+    if (greetingEl) {
+        const hour = new Date().getHours();
+        greetingEl.textContent = hour < 12 ? "Good morning 🌅" :
+                                 hour < 17 ? "Good afternoon ☀️" :
+                                             "Good evening 🌙";
+    }
+}
+
+// =========================
+// LOGOUT
+// =========================
+function logout(e) {
+    if (e) e.preventDefault();
+    localStorage.clear();
+    location.href = "Login.html";
+}
+
+// =========================
+// INITIALIZE EVERYTHING ON DOM
+// =========================
+document.addEventListener("DOMContentLoaded", () => {
+    initializeTheme();
+    initializeLogin();
+    initializeSignup();
+    initializePasswordToggles();
+    initializeDashboard();
+
+    // Theme buttons
+    document.getElementById("darkModeBtn")?.addEventListener("click", () => applyTheme("dark"));
+    document.getElementById("lightModeBtn")?.addEventListener("click", () => applyTheme("light"));
 });
+
+// =========================
+// EXPORT LOGOUT FOR DASHBOARD
+// =========================
+export { logout, applyTheme };
