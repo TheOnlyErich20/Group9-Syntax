@@ -1,8 +1,7 @@
 /* =========================
    GLOBAL CONFIG
 ========================= */
-import { auth } from "./firebase.js";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+const API_URL = "http://localhost:3000/api";
 
 /* =========================
    AUTH GUARD
@@ -18,7 +17,7 @@ function checkLoginStatus() {
 checkLoginStatus();
 
 /* =========================
-   LOGIN (Firebase)
+   LOGIN
 ========================= */
 async function handleLoginSubmit(e) {
     e.preventDefault();
@@ -32,38 +31,42 @@ async function handleLoginSubmit(e) {
     }
 
     try {
-        const userCred = await signInWithEmailAndPassword(auth, email, password);
+        const res = await fetch(`${API_URL}/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password })
+        });
 
-        // Save user info in localStorage
+        const data = await res.json();
+
+        if (!data.success) {
+            showLoginError(data.message || "Invalid credentials");
+            return;
+        }
+
         localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("userData", JSON.stringify({
-            uid: userCred.user.uid,
-            email: userCred.user.email
-        }));
-        localStorage.setItem("userId", userCred.user.uid);
+        localStorage.setItem("userData", JSON.stringify(data.user));
+        localStorage.setItem("userId", data.user.id);
 
         showLoginSuccess("Login successful! Redirecting...");
         setTimeout(() => location.href = "index.html", 1200);
 
-    } catch (err) {
-        let msg = "Login failed";
-        if (err.code === "auth/user-not-found") msg = "User not found";
-        else if (err.code === "auth/wrong-password") msg = "Incorrect password";
-        else if (err.code === "auth/invalid-email") msg = "Invalid email";
-        showLoginError(msg);
+    } catch {
+        showLoginError("Server connection failed");
     }
 }
 
 /* =========================
-   SIGNUP (Firebase)
+   SIGNUP
 ========================= */
 async function handleSignupSubmit(e) {
     e.preventDefault();
 
-    const fullName = document.getElementById("fullName")?.value.trim();
-    const email = document.getElementById("signupEmail")?.value.trim();
-    const password = document.getElementById("signupPassword")?.value.trim();
-    const confirm = document.getElementById("confirmPassword")?.value.trim();
+    const fullName = val("fullName");
+    const email = val("signupEmail");
+    const password = val("signupPassword");
+    const confirm = val("confirmPassword");
+    const course = val("course");
 
     if (!fullName || !email || !password || !confirm) {
         showSignupError("Please fill in all required fields");
@@ -76,36 +79,48 @@ async function handleSignupSubmit(e) {
     }
 
     try {
-        const userCred = await createUserWithEmailAndPassword(auth, email, password);
+        const res = await fetch(`${API_URL}/signup`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                email,
+                password,
+                name: fullName.split(" ")[0],
+                fullName,
+                course
+            })
+        });
 
-        // Save user info in localStorage
-        localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("userData", JSON.stringify({
-            uid: userCred.user.uid,
-            email: userCred.user.email,
-            fullName
-        }));
-        localStorage.setItem("userId", userCred.user.uid);
+        const data = await res.json();
+
+        if (!data.success) {
+            showSignupError(data.message || "Signup failed");
+            return;
+        }
 
         showSignupSuccess("Account created! Redirecting...");
-        setTimeout(() => location.href = "index.html", 1200);
+        setTimeout(() => location.href = "Login.html", 1200);
 
-    } catch (err) {
-        let msg = "Signup failed";
-        if (err.code === "auth/email-already-in-use") msg = "Email already in use";
-        else if (err.code === "auth/invalid-email") msg = "Invalid email";
-        else if (err.code === "auth/weak-password") msg = "Password is too weak";
-        showSignupError(msg);
+    } catch {
+        showSignupError("Server connection failed");
     }
 }
 
 /* =========================
    UI HELPERS
 ========================= */
-function showLoginError(msg) { setMessage("loginError", msg, false); }
-function showLoginSuccess(msg) { setMessage("loginSuccess", msg, true); }
-function showSignupError(msg) { setMessage("signupError", msg, false); }
-function showSignupSuccess(msg) { setMessage("signupSuccess", msg, true); }
+function showLoginError(msg) {
+    setMessage("loginError", msg, false);
+}
+function showLoginSuccess(msg) {
+    setMessage("loginSuccess", msg, true);
+}
+function showSignupError(msg) {
+    setMessage("signupError", msg, false);
+}
+function showSignupSuccess(msg) {
+    setMessage("signupSuccess", msg, true);
+}
 
 function setMessage(id, msg, success) {
     const el = document.getElementById(id);
@@ -116,11 +131,12 @@ function setMessage(id, msg, success) {
 }
 
 const val = id => document.getElementById(id)?.value.trim();
-
 function updateThemeButtons(theme) {
     const darkBtn = document.getElementById("darkModeBtn");
     const lightBtn = document.getElementById("lightModeBtn");
+
     if (!darkBtn || !lightBtn) return;
+
     darkBtn.classList.toggle("active", theme === "dark");
     lightBtn.classList.toggle("active", theme === "light");
 }
@@ -131,13 +147,15 @@ function updateThemeButtons(theme) {
 function initializeUser() {
     const user = JSON.parse(localStorage.getItem("userData"));
     if (!user) return;
+
     const header = document.getElementById("headerUserName");
-    if (header) header.textContent = user.fullName || user.name || "User";
+    if (header) header.textContent = user.name;
 }
 
 function updateDashboardGreeting() {
     const el = document.getElementById("greetingMessage");
     if (!el) return;
+
     const h = new Date().getHours();
     el.textContent =
         h < 12 ? "Good morning 🌅" :
@@ -168,7 +186,6 @@ function toggleHeaderTheme() {
     localStorage.setItem("theme", next);
     initializeTheme();
 }
-
 function applyTheme(theme) {
     document.body.classList.toggle("light-mode", theme === "light");
     localStorage.setItem("theme", theme);
@@ -189,20 +206,10 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("signupForm")
         ?.addEventListener("submit", handleSignupSubmit);
 
+    // 🔥 ADD THESE
     document.getElementById("darkModeBtn")
         ?.addEventListener("click", () => applyTheme("dark"));
 
     document.getElementById("lightModeBtn")
         ?.addEventListener("click", () => applyTheme("light"));
 });
-// Make applyTheme globally accessible (for buttons if needed)
-window.applyTheme = applyTheme;
-
-// Ensure buttons work even in module
-const darkBtn = document.getElementById("darkModeBtn");
-const lightBtn = document.getElementById("lightModeBtn");
-
-if (darkBtn && lightBtn) {
-    darkBtn.addEventListener("click", () => applyTheme("dark"));
-    lightBtn.addEventListener("click", () => applyTheme("light"));
-}
