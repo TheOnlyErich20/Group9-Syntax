@@ -131,6 +131,15 @@ function setMessage(id, msg, success) {
 }
 
 const val = id => document.getElementById(id)?.value.trim();
+function updateThemeButtons(theme) {
+    const darkBtn = document.getElementById("darkModeBtn");
+    const lightBtn = document.getElementById("lightModeBtn");
+
+    if (!darkBtn || !lightBtn) return;
+
+    darkBtn.classList.toggle("active", theme === "dark");
+    lightBtn.classList.toggle("active", theme === "light");
+}
 
 /* =========================
    DASHBOARD
@@ -168,6 +177,7 @@ function logout() {
 function initializeTheme() {
     const theme = localStorage.getItem("theme") || "dark";
     document.body.classList.toggle("light-mode", theme === "light");
+    updateThemeButtons(theme);
 }
 
 function toggleHeaderTheme() {
@@ -175,6 +185,11 @@ function toggleHeaderTheme() {
     const next = current === "dark" ? "light" : "dark";
     localStorage.setItem("theme", next);
     initializeTheme();
+}
+function applyTheme(theme) {
+    document.body.classList.toggle("light-mode", theme === "light");
+    localStorage.setItem("theme", theme);
+    updateThemeButtons(theme);
 }
 
 /* =========================
@@ -190,4 +205,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("signupForm")
         ?.addEventListener("submit", handleSignupSubmit);
+
+    // 🔥 ADD THESE
+    document.getElementById("darkModeBtn")
+        ?.addEventListener("click", () => applyTheme("dark"));
+
+    document.getElementById("lightModeBtn")
+        ?.addEventListener("click", () => applyTheme("light"));
 });
+
