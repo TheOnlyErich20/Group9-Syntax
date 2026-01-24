@@ -79,66 +79,61 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 });
-/* ========================= UI HELPERS ========================= */
-function showLoginError(msg) {
-  setMessage("loginError", msg, false);
+/* =========================
+   DASHBOARD HEADER / USER MENU
+========================= */
+function initializeDashboard() {
+    const user = JSON.parse(localStorage.getItem("userData"));
+    const userNameEl = document.getElementById("headerUserName");
+    const dashboardNameEl = document.getElementById("dashboardUserName");
+    const greetingEl = document.getElementById("greetingMessage");
+
+    if (user) {
+        if (userNameEl) userNameEl.textContent = user.name;
+        if (dashboardNameEl) dashboardNameEl.textContent = user.name.split(" ")[0]; // first name
+    }
+
+    if (greetingEl) {
+        const h = new Date().getHours();
+        greetingEl.textContent =
+            h < 12 ? "Good morning 🌅" :
+            h < 17 ? "Good afternoon ☀️" :
+                     "Good evening 🌙";
+    }
 }
 
-function showLoginSuccess(msg) {
-  setMessage("loginSuccess", msg, true);
+/* =========================
+   LOGOUT
+========================= */
+function logout(e) {
+    if (e) e.preventDefault();
+    localStorage.clear();
+    location.href = "Login.html";
 }
 
-function showSignupError(msg) {
-  setMessage("signupError", msg, false);
+/* =========================
+   TOGGLE USER MENU
+========================= */
+function toggleUserMenu() {
+    const menu = document.getElementById("userMenu");
+    menu.classList.toggle("active");
 }
 
-function showSignupSuccess(msg) {
-  setMessage("signupSuccess", msg, true);
-}
+// Open/close menu when clicking user button
+document.getElementById("userBtn")?.addEventListener("click", toggleUserMenu);
 
-function setMessage(id, msg, success) {
-  const el = document.getElementById(id);
-  if (!el) return;
+// Close menu if clicking outside
+document.addEventListener("click", (e) => {
+    const menu = document.getElementById("userMenu");
+    const button = document.getElementById("userBtn");
+    if (!menu.contains(e.target) && !button.contains(e.target)) {
+        menu.classList.remove("active");
+    }
+});
 
-  el.textContent = msg;
-  el.style.display = "block";
-  el.style.color = success ? "#51cf66" : "#ff6b6b";
-}
-
-const val = id => document.getElementById(id)?.value.trim();
-
-function updateThemeButtons(theme) {
-  const darkBtn = document.getElementById("darkModeBtn");
-  const lightBtn = document.getElementById("lightModeBtn");
-
-  if (!darkBtn || !lightBtn) return;
-
-  darkBtn.classList.toggle("active", theme === "dark");
-  lightBtn.classList.toggle("active", theme === "light");
-}
-
-/* ========================= DASHBOARD ========================= */
-function initializeUser() {
-  const user = JSON.parse(localStorage.getItem("userData"));
-  if (!user) return;
-
-  const header = document.getElementById("headerUserName");
-  if (header) header.textContent = user.name;
-}
-
-function updateDashboardGreeting() {
-  const el = document.getElementById("greetingMessage");
-  if (!el) return;
-
-  const h = new Date().getHours();
-  el.textContent =
-    h < 12 ? "Good morning 🌅" :
-    h < 17 ? "Good afternoon ☀️" :
-             "Good evening 🌙";
-}
-
-/* ========================= LOGOUT ========================= */
-function logout() {
-  localStorage.clear();
-  location.href = "Login.html";
-}
+/* =========================
+   Initialize on page load
+========================= */
+document.addEventListener("DOMContentLoaded", () => {
+    initializeDashboard();
+});
