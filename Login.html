@@ -16,11 +16,10 @@
     <a href="index.html" class="brand">DARKBOARD</a>
     <div class="header-right">
         <div class="theme-toggle">
-            <!-- Removed inline onclick -->
-            <button class="theme-btn" id="darkModeBtn" title="Dark Mode">
+            <button class="theme-btn" id="darkModeBtn" onclick="applyTheme('dark')" title="Dark Mode">
                 <i class="fas fa-moon"></i>
             </button>
-            <button class="theme-btn" id="lightModeBtn" title="Light Mode">
+            <button class="theme-btn" id="lightModeBtn" onclick="applyTheme('light')" title="Light Mode">
                 <i class="fas fa-sun"></i>
             </button>
         </div>
@@ -38,7 +37,6 @@
                 <p>Sign in to your account</p>
             </div>
 
-            <!-- Login Form -->
             <form class="login-form" id="loginForm">
                 <div class="form-group">
                     <label for="email"><i class="fas fa-envelope"></i> Email</label>
@@ -60,10 +58,6 @@
                     </label>
                     <a href="#" class="forgot-password">Forgot password?</a>
                 </div>
-
-                <!-- Login Error/Success Messages -->
-                <div id="loginError" style="display:none;"></div>
-                <div id="loginSuccess" style="display:none;"></div>
 
                 <button type="submit" class="login-btn">Sign In</button>
             </form>
@@ -101,7 +95,7 @@
     </div>
 </section>
 
-<!-- Firebase & Custom Script -->
-<script type="module" src="script.js"></script>
+<script src="script.js"></script>
+
 </body>
 </html>
