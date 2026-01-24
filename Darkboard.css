@@ -3000,3 +3000,19 @@ body.light-mode .forgot-password:hover {
         gap: 15px;
     }
 }
+/* Default dark theme */
+body {
+    background-color: #121212;
+    color: #ffffff;
+}
+
+/* Light mode override */
+body.light-mode {
+    background-color: #f9f9f9;
+    color: #222222;
+}
+
+/* Buttons active states */
+button.active {
+    border: 2px solid #51cf66;
+}
