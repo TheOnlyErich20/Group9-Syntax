@@ -14,31 +14,40 @@
     
 <header class="dashboard-header">
     <a href="index.html" class="brand">DARKBOARD</a>
+
     <div class="header-right">
+        <!-- Search bar -->
         <div class="search-bar">
             <i class="fas fa-search"></i>
             <input type="text" placeholder="Search subjects, grades...">
         </div>
+
+        <!-- User and theme -->
         <div class="header-user">
+            <!-- Theme toggle -->
             <div class="theme-toggle">
-                <button class="theme-btn" id="darkModeBtn" onclick="applyTheme('dark')" title="Dark Mode">
+                <button class="theme-btn" id="darkModeBtn" title="Dark Mode">
                     <i class="fas fa-moon"></i>
                 </button>
-                <button class="theme-btn" id="lightModeBtn" onclick="applyTheme('light')" title="Light Mode">
+                <button class="theme-btn" id="lightModeBtn" title="Light Mode">
                     <i class="fas fa-sun"></i>
                 </button>
             </div>
-            <button class="user-btn" onclick="toggleUserMenu()">
+
+            <!-- User button -->
+            <button class="user-btn" id="userBtn">
                 <img id="headerUserImg" src="https://via.placeholder.com/40/0b1f2e/00d4ff?text=👨" alt="User" class="user-avatar">
-                <span id="headerUserName">John Doe</span>
+                <span id="headerUserName">User</span>
                 <i class="fas fa-chevron-down"></i>
             </button>
+
+            <!-- User dropdown menu -->
             <div class="user-menu" id="userMenu">
                 <a href="Profile.html"><i class="fas fa-user"></i> My Profile</a>
                 <a href="Settings.html"><i class="fas fa-cog"></i> Settings</a>
                 <a href="#"><i class="fas fa-question-circle"></i> Help</a>
                 <hr>
-                <a href="Login.html" onclick="handleLogout(event)"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                <a href="Login.html" onclick="logout(event)"><i class="fas fa-sign-out-alt"></i> Logout</a>
             </div>
         </div>
     </div>
