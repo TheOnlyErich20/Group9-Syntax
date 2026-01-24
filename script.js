@@ -65,7 +65,11 @@ function initializeTheme() {
 }
 
 function applyTheme(theme) {
-    document.body.classList.toggle("light-mode", theme === "light");
+    if (theme === "light") {
+        document.body.classList.add("light-mode");
+    } else {
+        document.body.classList.remove("light-mode");
+    }
     localStorage.setItem("theme", theme);
     updateThemeButtons(theme);
 }
