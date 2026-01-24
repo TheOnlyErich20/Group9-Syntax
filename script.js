@@ -78,21 +78,6 @@ document.addEventListener("DOMContentLoaded", () => {
             setMessage("loginError", err.message, false);
         }
        document.addEventListener("DOMContentLoaded", () => {
-    
-      // Password toggles for signup form
-    function togglePassword(inputId, iconId) {
-        const input = document.getElementById(inputId);
-        const icon = document.querySelector(`#${iconId} i`);
-        if (!input || !icon) return;
-        input.type = input.type === "password" ? "text" : "password";
-        icon.classList.toggle("fa-eye-slash");
-    }
-
-    const signupToggle = document.getElementById("toggleSignupPassword");
-    const confirmToggle = document.getElementById("toggleConfirmPassword");
-
-    signupToggle?.addEventListener("click", () => togglePassword("signupPassword", "toggleSignupPassword"));
-    confirmToggle?.addEventListener("click", () => togglePassword("confirmPassword", "toggleConfirmPassword"));
     });
 });
 /* =========================
