@@ -1,6 +1,10 @@
 /* =========================
    AUTH GUARD
 ========================= */
+import { auth } from './firebase.js';
+
+// Example login:
+auth.signInWithEmailAndPassword(email, password)
 firebase.auth().onAuthStateChanged(user => {
     const page = location.pathname.split("/").pop().toLowerCase();
     if (!user && page !== "login.html" && page !== "signup.html") {
