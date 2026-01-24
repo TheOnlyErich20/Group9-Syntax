@@ -137,3 +137,89 @@ document.addEventListener("click", (e) => {
 document.addEventListener("DOMContentLoaded", () => {
     initializeDashboard();
 });
+/* =========================
+   SIGNUP FORM
+========================= */
+import { createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+const db = getFirestore();
+
+// Grab form and message element
+const signupForm = document.getElementById("signupForm");
+const signupMessage = document.getElementById("signupMessage");
+
+signupForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const fullName = document.getElementById("fullName").value.trim();
+    const email = document.getElementById("signupEmail").value.trim();
+    const password = document.getElementById("signupPassword").value;
+    const confirmPassword = document.getElementById("confirmPassword").value;
+    const phone = document.getElementById("phone").value.trim();
+    const course = document.getElementById("course").value.trim();
+
+    // Validations
+    if (!fullName || !email || !password || !confirmPassword || !course) {
+        signupMessage.style.color = "#ff6b6b";
+        signupMessage.textContent = "Please fill in all required fields.";
+        signupMessage.style.display = "block";
+        return;
+    }
+
+    if (password !== confirmPassword) {
+        signupMessage.style.color = "#ff6b6b";
+        signupMessage.textContent = "Passwords do not match.";
+        signupMessage.style.display = "block";
+        return;
+    }
+
+    if (password.length < 6) {
+        signupMessage.style.color = "#ff6b6b";
+        signupMessage.textContent = "Password must be at least 6 characters.";
+        signupMessage.style.display = "block";
+        return;
+    }
+
+    try {
+        // Create user in Firebase Auth
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // Update display name
+        await updateProfile(user, { displayName: fullName });
+
+        // Store extra student info in Firestore
+        await setDoc(doc(db, "students", user.uid), {
+            fullName,
+            email,
+            phone,
+            course,
+            role: "student",
+            createdAt: serverTimestamp()
+        });
+
+        signupMessage.style.color = "#51cf66";
+        signupMessage.textContent = "Account created successfully! Redirecting to login...";
+        signupMessage.style.display = "block";
+
+        setTimeout(() => window.location.href = "Login.html", 1500);
+
+    } catch (err) {
+        console.error(err);
+        signupMessage.style.color = "#ff6b6b";
+        signupMessage.textContent = err.message;
+        signupMessage.style.display = "block";
+    }
+});
+
+// Password toggles for signup form
+function togglePassword(inputId, iconId) {
+    const input = document.getElementById(inputId);
+    const icon = document.querySelector(`#${iconId} i`);
+    input.type = input.type === "password" ? "text" : "password";
+    icon.classList.toggle("fa-eye-slash");
+}
+
+document.getElementById("toggleSignupPassword")?.addEventListener("click", () => togglePassword("signupPassword", "toggleSignupPassword"));
+document.getElementById("toggleConfirmPassword")?.addEventListener("click", () => togglePassword("confirmPassword", "toggleConfirmPassword"));
