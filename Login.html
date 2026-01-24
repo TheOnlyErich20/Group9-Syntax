@@ -16,7 +16,7 @@
     <a href="index.html" class="brand">DARKBOARD</a>
     <div class="header-right">
         <div class="theme-toggle">
-           <button class="theme-btn" id="darkModeBtn" title="Dark Mode">
+            <button class="theme-btn" id="darkModeBtn" title="Dark Mode">
                 <i class="fas fa-moon"></i>
             </button>
             <button class="theme-btn" id="lightModeBtn" title="Light Mode">
@@ -65,44 +65,31 @@
             <div class="login-footer">
                 <p>Don't have an account? <a href="SignUp.html" class="signup-link">Sign up here</a></p>
             </div>
+
+            <p id="loginError" class="form-message" style="display:none;"></p>
+            <p id="loginSuccess" class="form-message" style="display:none;"></p>
         </div>
 
         <div class="login-info">
             <h2>Your Academic Hub</h2>
             <ul class="features">
-                <li>
-                    <i class="fas fa-check-circle"></i>
-                    <span>Track all your subjects and grades</span>
-                </li>
-                <li>
-                    <i class="fas fa-check-circle"></i>
-                    <span>Monitor your academic progress</span>
-                </li>
-                <li>
-                    <i class="fas fa-check-circle"></i>
-                    <span>Access class schedules</span>
-                </li>
-                <li>
-                    <i class="fas fa-check-circle"></i>
-                    <span>View assignments and announcements</span>
-                </li>
-                <li>
-                    <i class="fas fa-check-circle"></i>
-                    <span>Connect with your teachers</span>
-                </li>
+                <li><i class="fas fa-check-circle"></i> <span>Track all your subjects and grades</span></li>
+                <li><i class="fas fa-check-circle"></i> <span>Monitor your academic progress</span></li>
+                <li><i class="fas fa-check-circle"></i> <span>Access class schedules</span></li>
+                <li><i class="fas fa-check-circle"></i> <span>View assignments and announcements</span></li>
+                <li><i class="fas fa-check-circle"></i> <span>Connect with your teachers</span></li>
             </ul>
         </div>
     </div>
 </section>
 
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+<!-- Your Firebase config -->
+<script src="firebase.js"></script>
 <script src="script.js"></script>
 
 </body>
-    <!-- Firebase App & Auth SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-
-    <!-- Your firebase config -->
-    <script src="firebase.js"></script>
-    <script src="script.js"></script>
 </html>
