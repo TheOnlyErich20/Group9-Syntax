@@ -4,13 +4,13 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth
 
 // Your Firebase config
 const firebaseConfig = {
-  apiKey: "AIzaSyBCMV6CerYS4QCnZ52Q1zcF3bpTwUIuK0w",
-  authDomain: "darkboard-f4c38.firebaseapp.com",
-  projectId: "darkboard-f4c38",
-  storageBucket: "darkboard-f4c38.appspot.com", // <- FIXED
-  messagingSenderId: "164112373154",
-  appId: "1:164112373154:web:57b154d6ff322a50ae4efb",
-  measurementId: "G-KKB3PGBJS5"
+  apiKey: "AIzaSyCf9rifuGfNqcfhOZK8Lygt43SshKaCKrQ",
+  authDomain: "group9-syntax-9fb66.firebaseapp.com",
+  projectId: "group9-syntax-9fb66",
+  storageBucket: "group9-syntax-9fb66.firebasestorage.app",
+  messagingSenderId: "463795941537",
+  appId: "1:463795941537:web:37fa287c7c1e50b69040e0",
+  measurementId: "G-YFBM5P78DX"
 };
 
 // Initialize Firebase
