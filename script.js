@@ -79,6 +79,8 @@ function initializeLogin() {
             setMessage("loginError", err.message);
         }
     });
+}
+
 // =========================
 // SIGNUP FUNCTIONALITY
 // =========================
