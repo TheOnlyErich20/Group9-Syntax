@@ -79,7 +79,31 @@ function initializeLogin() {
             setMessage("loginError", err.message);
         }
     });
+
+    // Dropdown Menu
 }
+
+    import { logout } from './script.js'; // Make sure logout function is exported
+
+    // User menu toggle
+    const userBtn = document.getElementById("userBtn");
+    const userMenu = document.getElementById("userMenu");
+
+    userBtn.addEventListener("click", () => {
+        userMenu.classList.toggle("active");
+    });
+
+    // Close user menu when clicking outside
+    document.addEventListener("click", (e) => {
+        if (!userMenu.contains(e.target) && !userBtn.contains(e.target)) {
+            userMenu.classList.remove("active");
+        }
+    });
+
+    // Logout button
+    const logoutBtn = document.getElementById("logoutBtn");
+    logoutBtn.addEventListener("click", (e) => logout(e));
+
 
 // =========================
 // SIGNUP FUNCTIONALITY
