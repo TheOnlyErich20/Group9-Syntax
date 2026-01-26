@@ -79,10 +79,6 @@ function initializeLogin() {
             setMessage("loginError", err.message);
         }
     });
-
-    // Dropdown Menu
-
-
 // =========================
 // SIGNUP FUNCTIONALITY
 // =========================
