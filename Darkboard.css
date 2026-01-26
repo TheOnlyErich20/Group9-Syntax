@@ -1058,7 +1058,8 @@ section{
 
 .user-menu {
     position: absolute;
-    top: 80%;
+    top: 100%;
+    right: 0;
     background: var(--bg-secondary);
     border: 2px solid var(--accent);
     border-radius: 10px;
