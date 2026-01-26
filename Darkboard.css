@@ -1028,6 +1028,7 @@ section{
     display: flex;
     align-items: center;
     position: relative;
+    gap: 15px;
 }
 
 .user-btn {
