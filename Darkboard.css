@@ -1061,6 +1061,7 @@ section{
     position: absolute;
     top: 90%;
     right: 3%;
+    left: 3%;
     background: var(--bg-secondary);
     border: 2px solid var(--accent);
     border-radius: 10px;
