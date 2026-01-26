@@ -1057,7 +1057,7 @@ section{
 }
 
 .user-menu {
-    position: relative;
+    position: absolute;
     top: 100%;
     right: 0;
     background: var(--bg-secondary);
