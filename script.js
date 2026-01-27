@@ -145,8 +145,8 @@ function initializePasswordToggles() {
         const icon = document.querySelector(`#${iconId} i`);
         if (!input || !icon) return;
         input.type = input.type === "password" ? "text" : "password";
-        icon.classList.toggle("fa-eye");
         icon.classList.toggle("fa-eye-slash");
+        icon.classList.toggle("fa-eye");
     }
 
     document.getElementById("togglePassword")?.addEventListener("click", () => togglePassword("password", "togglePassword"));
