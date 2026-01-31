@@ -383,6 +383,23 @@ function updateProfileUI(data) {
 }
 
 // =========================
+// GRADES PAGE FUNCTIONALITY
+// =========================
+function initializeGradesTable() {
+    const rows = document.querySelectorAll('.grades-table .table-row');
+    
+    rows.forEach(row => {
+        row.addEventListener('click', () => {
+            // Close other rows (accordion style)
+            rows.forEach(r => {
+                if (r !== row) r.classList.remove('active');
+            });
+            row.classList.toggle('active');
+        });
+    });
+}
+
+// =========================
 // INITIALIZE EVERYTHING ON DOM
 // =========================
 document.addEventListener("DOMContentLoaded", () => {
@@ -394,6 +411,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initializeHelp();
     initializeSubjects();
     initializeProfile();
+    initializeGradesTable();
 
     // THEME BUTTONS FOR MULTIPLE PAGES
     document.getElementById("darkModeBtn")?.addEventListener("click", () => applyTheme("dark"));
