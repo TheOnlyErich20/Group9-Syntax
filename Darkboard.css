@@ -1784,6 +1784,12 @@ section{
         border: 1px solid rgba(255,255,255,0.1);
         margin-bottom: 15px;
         border-radius: 10px;
+        cursor: pointer;
+        transition: 0.3s ease;
+    }
+
+    .table-row:hover {
+        background: rgba(0, 212, 255, 0.1);
     }
 
     .col-subject {
@@ -1792,9 +1798,26 @@ section{
         border-bottom: 1px solid rgba(255,255,255,0.1);
         padding-bottom: 8px;
         margin-bottom: 5px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 
-    .col-midterm, .col-final, .col-overall, .col-status {
+    .col-subject::after {
+        content: '\f078';
+        font-family: "Font Awesome 6 Free";
+        font-weight: 900;
+        font-size: 0.8em;
+        transition: transform 0.3s ease;
+        color: var(--text-secondary);
+    }
+
+    .table-row.active .col-subject::after {
+        transform: rotate(180deg);
+        color: var(--accent);
+    }
+
+    .col-overall {
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -1802,7 +1825,28 @@ section{
         font-size: 0.95em;
     }
 
-    .col-midterm::before, .col-final::before, .col-overall::before, .col-status::before {
+    .col-prelim, .col-midterm, .col-final, .col-status {
+        display: none;
+        justify-content: space-between;
+        align-items: center;
+        text-align: right;
+        font-size: 0.95em;
+    }
+
+    .table-row.active .col-prelim, 
+    .table-row.active .col-midterm, 
+    .table-row.active .col-final, 
+    .table-row.active .col-status {
+        display: flex;
+        animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .col-prelim::before, .col-midterm::before, .col-final::before, .col-overall::before, .col-status::before {
         content: attr(data-label);
         color: var(--text-secondary);
         font-weight: 600;
@@ -1909,7 +1953,7 @@ section{
 
 .table-header {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr 1.5fr;
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1.5fr;
     background: rgba(0, 212, 255, 0.1);
     padding: 20px 25px;
     font-weight: 600;
@@ -1924,7 +1968,7 @@ section{
 
 .table-row {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr 1.5fr;
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1.5fr;
     padding: 20px 25px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     align-items: center;
@@ -1944,6 +1988,7 @@ section{
     font-weight: 600;
 }
 
+.col-prelim,
 .col-midterm,
 .col-final,
 .col-overall {
