@@ -1770,6 +1770,12 @@ section{
         grid-template-columns: repeat(2, 1fr);
     }
 
+    .grades-controls {
+        padding: 0 10px 20px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
     /* Responsive Tables for Grades */
     .table-header {
         display: none;
@@ -1839,6 +1845,27 @@ section{
     .table-row.active .col-status {
         display: flex;
         animation: fadeIn 0.3s ease;
+    }
+
+    /* Mobile filtering for grades accordion */
+    .grades-table.show-prelim .table-row .col-overall,
+    .grades-table.show-midterm .table-row .col-overall,
+    .grades-table.show-final .table-row .col-overall {
+        display: none;
+    }
+
+    .grades-table.show-prelim .table-row.active .col-midterm,
+    .grades-table.show-prelim .table-row.active .col-final,
+    .grades-table.show-prelim .table-row.active .col-status,
+
+    .grades-table.show-midterm .table-row.active .col-prelim,
+    .grades-table.show-midterm .table-row.active .col-final,
+    .grades-table.show-midterm .table-row.active .col-status,
+
+    .grades-table.show-final .table-row.active .col-prelim,
+    .grades-table.show-final .table-row.active .col-midterm,
+    .grades-table.show-final .table-row.active .col-status {
+        display: none;
     }
 
     @keyframes fadeIn {
