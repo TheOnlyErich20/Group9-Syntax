@@ -1897,6 +1897,12 @@ section{
     gap: 30px;
 }
 
+.grades-controls {
+    display: flex;
+    gap: 10px;
+    padding: 0 25px 20px;
+}
+
 .grades-stats {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -1981,6 +1987,32 @@ section{
 
 .table-row:last-child {
     border-bottom: none;
+}
+
+@media (min-width: 769px) {
+    .grades-table.show-prelim .table-header,
+    .grades-table.show-prelim .table-row,
+    .grades-table.show-midterm .table-header,
+    .grades-table.show-midterm .table-row,
+    .grades-table.show-final .table-header,
+    .grades-table.show-final .table-row {
+        grid-template-columns: 2fr 1fr;
+    }
+
+    .grades-table.show-prelim .col-midterm,
+    .grades-table.show-prelim .col-final,
+    .grades-table.show-prelim .col-overall,
+    .grades-table.show-prelim .col-status,
+    .grades-table.show-midterm .col-prelim,
+    .grades-table.show-midterm .col-final,
+    .grades-table.show-midterm .col-overall,
+    .grades-table.show-midterm .col-status,
+    .grades-table.show-final .col-prelim,
+    .grades-table.show-final .col-midterm,
+    .grades-table.show-final .col-overall,
+    .grades-table.show-final .col-status {
+        display: none;
+    }
 }
 
 .col-subject {
