@@ -399,6 +399,34 @@ function initializeGradesTable() {
     });
 }
 
+function initializeGradesFilter() {
+    const controls = document.querySelector('.grades-controls');
+    if (!controls) return;
+
+    const table = document.querySelector('.grades-table');
+    if (!table) return;
+
+    const buttons = controls.querySelectorAll('button[data-term]');
+
+    buttons.forEach(button => {
+        button.addEventListener('click', () => {
+            // Update active button
+            buttons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+
+            const term = button.dataset.term;
+
+            // Remove all term-specific classes from the table
+            table.classList.remove('show-prelim', 'show-midterm', 'show-final');
+
+            // Add the specific class if not 'all'
+            if (term !== 'all') {
+                table.classList.add(`show-${term}`);
+            }
+        });
+    });
+}
+
 // =========================
 // INITIALIZE EVERYTHING ON DOM
 // =========================
@@ -412,6 +440,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initializeSubjects();
     initializeProfile();
     initializeGradesTable();
+    initializeGradesFilter();
 
     // THEME BUTTONS FOR MULTIPLE PAGES
     document.getElementById("darkModeBtn")?.addEventListener("click", () => applyTheme("dark"));
