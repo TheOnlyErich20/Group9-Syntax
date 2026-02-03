@@ -227,66 +227,95 @@ function initializeHelp() {
 // =========================
 function initializeSubjects() {
     const container = document.querySelector('.subjects-container');
-    if (!container) return;
-
-    // Sample Data (Since database isn't connected for this yet)
-    const subjects = [
-        { id: 1, name: "Mathematics", teacher: "Mr. Johnson", time: "Mon/Wed 9:00 AM", grade: "98", type: "core" },
-        { id: 2, name: "Computer Science", teacher: "Mr. Chen", time: "Tue/Thu 11:00 AM", grade: "99", type: "core" },
-        { id: 3, name: "Physics", teacher: "Dr. Williams", time: "Wed/Fri 1:00 PM", grade: "96", type: "core" },
-        { id: 4, name: "Art & Design", teacher: "Ms. Garcia", time: "Fri 3:00 PM", grade: "88", type: "elective" }
-    ];
-
-    // Render Subjects
-    container.innerHTML = subjects.map(sub => `
-        <div class="subject-card" data-id="${sub.id}" data-type="${sub.type}">
-            <div class="subject-icon"><i class="fas fa-book"></i></div>
-            <h3>${sub.name}</h3>
-            <div class="subject-meta">
-                <p><i class="fas fa-chalkboard-teacher"></i> ${sub.teacher}</p>
-                <p><i class="fas fa-clock"></i> ${sub.time}</p>
-            </div>
-            <div class="grade-display">${sub.grade}</div>
-            <span class="subject-badge">${sub.type.toUpperCase()}</span>
-        </div>
-    `).join('');
-
-    // Handle "Add Subject" Button
     const addBtn = document.getElementById('addSubjectBtn');
     const addModal = document.getElementById('addSubjectModal');
-    if (addBtn && addModal) {
-        addBtn.addEventListener('click', () => addModal.style.display = 'block');
+    const addForm = document.getElementById('addSubjectForm');
+
+    if (!container) return;
+
+    let subjects = [];
+
+    // -------------------------
+    // RENDER SUBJECTS
+    // -------------------------
+    function renderSubjects() {
+        container.innerHTML = subjects.map((sub, index) => `
+            <div class="subject-card" data-index="${index}">
+                <div class="subject-icon"><i class="fas fa-book"></i></div>
+                <h3>${sub.name}</h3>
+                <p class="subject-meta">
+                    <i class="fas fa-chalkboard-teacher"></i> ${sub.teacher}
+                </p>
+                <p class="subject-meta">
+                    <i class="fas fa-clock"></i> ${sub.time}
+                </p>
+                <p class="grade-display">${sub.grade || "—"}</p>
+                <p class="subject-badge">${sub.description || ""}</p>
+            </div>
+        `).join('');
     }
 
-    // Handle Subject Card Click (Slide-in Panel)
-    const subjectModal = document.getElementById('subjectModal');
-    container.addEventListener('click', (e) => {
-        const card = e.target.closest('.subject-card');
-        if (card && subjectModal) {
-            const id = card.dataset.id;
-            const sub = subjects.find(s => s.id == id);
-            
-            if (sub) {
-                document.getElementById('modalTitle').textContent = sub.name;
-                document.getElementById('modalTeacher').textContent = sub.teacher;
-                document.getElementById('modalTime').textContent = sub.time;
-                document.getElementById('modalGrade').textContent = sub.grade;
-                subjectModal.style.display = 'block';
-            }
-        }
+    // -------------------------
+    // OPEN ADD MODAL
+    // -------------------------
+    addBtn?.addEventListener('click', () => {
+        addModal.style.display = 'block';
     });
 
-    // Close Modals
-    document.querySelectorAll('.close').forEach(btn => {
-        btn.addEventListener('click', function() {
-            this.closest('.modal').style.display = 'none';
+    // -------------------------
+    // CLOSE MODALS
+    // -------------------------
+    document.querySelectorAll('.modal .close').forEach(btn => {
+        btn.addEventListener('click', () => {
+            btn.closest('.modal').style.display = 'none';
         });
     });
 
-    window.addEventListener('click', (e) => {
-        if (e.target.classList.contains('modal')) {
-            e.target.style.display = 'none';
-        }
+    window.addEventListener('click', e => {
+        if (e.target === addModal) addModal.style.display = 'none';
+    });
+
+    // -------------------------
+    // ADD SUBJECT (FORM)
+    // -------------------------
+    addForm?.addEventListener('submit', e => {
+        e.preventDefault();
+
+        const subject = {
+            name: document.getElementById('newSubjectName').value.trim(),
+            teacher: document.getElementById('newTeacherName').value.trim(),
+            time: document.getElementById('newSubjectTime').value.trim(),
+            grade: document.getElementById('newSubjectGrade').value.trim(),
+            description: document.getElementById('newSubjectDescription').value.trim()
+        };
+
+        subjects.push(subject);
+        renderSubjects();
+
+        addForm.reset();
+        addModal.style.display = 'none';
+    });
+
+    // -------------------------
+    // SUBJECT DETAILS MODAL
+    // -------------------------
+    const subjectModal = document.getElementById('subjectModal');
+
+    container.addEventListener('click', e => {
+        const card = e.target.closest('.subject-card');
+        if (!card) return;
+
+        const index = card.dataset.index;
+        const sub = subjects[index];
+        if (!sub) return;
+
+        document.getElementById('modalTitle').textContent = sub.name;
+        document.getElementById('modalTeacher').textContent = sub.teacher;
+        document.getElementById('modalTime').textContent = sub.time;
+        document.getElementById('modalGrade').textContent = sub.grade || "—";
+        document.getElementById('modalDescription').textContent = sub.description || "";
+
+        subjectModal.style.display = 'block';
     });
 }
 
