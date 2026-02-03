@@ -229,99 +229,67 @@ function initializeSubjects() {
     const container = document.querySelector('.subjects-container');
     if (!container) return;
 
+    // Sample Data (Since database isn't connected for this yet)
+    const subjects = [
+        { id: 1, name: "Mathematics", teacher: "Mr. Johnson", time: "Mon/Wed 9:00 AM", grade: "98", type: "core" },
+        { id: 2, name: "Computer Science", teacher: "Mr. Chen", time: "Tue/Thu 11:00 AM", grade: "99", type: "core" },
+        { id: 3, name: "Physics", teacher: "Dr. Williams", time: "Wed/Fri 1:00 PM", grade: "96", type: "core" },
+        { id: 4, name: "Art & Design", teacher: "Ms. Garcia", time: "Fri 3:00 PM", grade: "88", type: "elective" }
+    ];
+
+    // Render Subjects
+    container.innerHTML = subjects.map(sub => `
+        <div class="subject-card" data-id="${sub.id}" data-type="${sub.type}">
+            <div class="subject-icon"><i class="fas fa-book"></i></div>
+            <h3>${sub.name}</h3>
+            <div class="subject-meta">
+                <p><i class="fas fa-chalkboard-teacher"></i> ${sub.teacher}</p>
+                <p><i class="fas fa-clock"></i> ${sub.time}</p>
+            </div>
+            <div class="grade-display">${sub.grade}</div>
+            <span class="subject-badge">${sub.type.toUpperCase()}</span>
+        </div>
+    `).join('');
+
+    // Handle "Add Subject" Button
     const addBtn = document.getElementById('addSubjectBtn');
     const addModal = document.getElementById('addSubjectModal');
-    const addForm = document.getElementById('addSubjectForm');
+    if (addBtn && addModal) {
+        addBtn.addEventListener('click', () => addModal.style.display = 'block');
+    }
 
-    // Open modal
-    addBtn?.addEventListener('click', () => addModal.style.display = 'block');
+    // Handle Subject Card Click (Slide-in Panel)
+    const subjectModal = document.getElementById('subjectModal');
+    container.addEventListener('click', (e) => {
+        const card = e.target.closest('.subject-card');
+        if (card && subjectModal) {
+            const id = card.dataset.id;
+            const sub = subjects.find(s => s.id == id);
+            
+            if (sub) {
+                document.getElementById('modalTitle').textContent = sub.name;
+                document.getElementById('modalTeacher').textContent = sub.teacher;
+                document.getElementById('modalTime').textContent = sub.time;
+                document.getElementById('modalGrade').textContent = sub.grade;
+                subjectModal.style.display = 'block';
+            }
+        }
+    });
 
-    // Close modals
-    document.querySelectorAll('.modal .close').forEach(btn => {
+    // Close Modals
+    document.querySelectorAll('.close').forEach(btn => {
         btn.addEventListener('click', function() {
             this.closest('.modal').style.display = 'none';
         });
     });
+
     window.addEventListener('click', (e) => {
         if (e.target.classList.contains('modal')) {
             e.target.style.display = 'none';
         }
     });
-
-    // Render a subject card
-    function renderSubject(subject) {
-        const subjectCard = document.createElement("div");
-        subjectCard.classList.add("subject-card");
-        subjectCard.innerHTML = `
-            <div class="subject-card-content">
-                <div class="subject-icon"><i class="fas fa-book"></i></div>
-                <h3>${subject.name}</h3>
-                <div class="subject-meta">
-                    <p><i class="fas fa-chalkboard-teacher"></i> ${subject.teacher}</p>
-                    <p><i class="fas fa-clock"></i> ${subject.time}</p>
-                </div>
-                <div class="grade-display">${subject.grade || ""}</div>
-                <span class="subject-badge">${subject.description || ""}</span>
-            </div>
-        `;
-        container.appendChild(subjectCard);
-
-        const subjectModal = document.getElementById('subjectModal');
-        subjectCard.addEventListener('click', () => {
-            if (!subjectModal) return;
-            document.getElementById('modalTitle').textContent = subject.name;
-            document.getElementById('modalTeacher').textContent = subject.teacher;
-            document.getElementById('modalTime').textContent = subject.time;
-            document.getElementById('modalGrade').textContent = subject.grade || "-";
-            document.getElementById('modalDescription').textContent = subject.description || "-";
-            subjectModal.style.display = 'block';
-        });
-    }
-
-    // Real-time Firestore listener
-    auth.onAuthStateChanged((user) => {
-        if (!user) return;
-
-        container.innerHTML = ""; // Clear existing
-
-        const subjectsRef = collection(db, "subjects");
-        const q = query(subjectsRef, where("uid", "==", user.uid));
-
-        onSnapshot(q, (snapshot) => {
-            container.innerHTML = "";
-            snapshot.forEach(docSnap => {
-                renderSubject(docSnap.data());
-            });
-        }, (err) => console.error("Error fetching subjects:", err));
-    });
-
-    // Handle Add Subject form
-    addForm?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const user = auth.currentUser;
-        if (!user) return alert("You must be logged in to add subjects.");
-
-        const name = document.getElementById('newSubjectName').value.trim();
-        const teacher = document.getElementById('newTeacherName').value.trim();
-        const time = document.getElementById('newSubjectTime').value.trim();
-        const grade = document.getElementById('newSubjectGrade').value.trim();
-        const description = document.getElementById('newSubjectDescription').value.trim();
-
-        if (!name || !teacher || !time) return alert("Please fill in required fields.");
-
-        const subjectData = { name, teacher, time, grade, description, uid: user.uid };
-
-        try {
-            await setDoc(doc(collection(db, "subjects")), subjectData); // Auto-ID
-            addForm.reset();
-            addModal.style.display = 'none';
-            // Real-time listener updates automatically
-        } catch (err) {
-            console.error("Error adding subject:", err);
-            alert("Failed to add subject. Try again.");
-        }
-    });
 }
+
 // =========================
 // PROFILE PAGE FUNCTIONALITY
 // =========================
