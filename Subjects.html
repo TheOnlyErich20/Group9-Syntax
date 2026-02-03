@@ -15,6 +15,99 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
     />
+
+    <style>
+      .add-subject {
+        text-align: right;
+        margin-bottom: 20px;
+      }
+
+      #addSubjectBtn {
+        background-color: #00d4ff;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        font-size: 16px;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+
+      #newSubjectName {
+        width: 100%;
+        padding: 8px;
+        margin: 5px 0 15px 0;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+
+      #newTeacherName {
+        width: 100%;
+        padding: 8px;
+        margin: 5px 0 15px 0;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+
+      #newSubjectTime {
+        width: 100%;
+        padding: 8px;
+        margin: 5px 0 15px 0;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+
+      #newSubjectGrade {
+        width: 100%;
+        padding: 8px;
+        margin: 5px 0 15px 0;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+
+      #newSubjectDescription {
+        width: 100%;
+        padding: 8px;
+        margin: 5px 0 15px 0;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        resize: none;
+      }
+
+      #newSubjectName:focus {
+        border: 1px solid #00d4ff;
+        outline: #00d4ff;
+      }
+
+      #newTeacherName:focus {
+        border: 1px solid #00d4ff;
+        outline: #00d4ff;
+      }
+
+      #newSubjectTime:focus {
+        border: 1px solid #00d4ff;
+        outline: #00d4ff;
+      }
+
+      #newSubjectGrade:focus {
+        border: 1px solid #00d4ff;
+        outline: #00d4ff;
+      }
+
+      #newSubjectDescription:focus {
+        border: 1px solid #00d4ff;
+        outline: #00d4ff;
+      }
+
+      .btn-add-subject {
+        background-color: #00d4ff;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        font-size: 16px;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+    </style>
   </head>
   <body>
     <div class="dashboard-wrapper">
@@ -76,6 +169,65 @@
             <p>Track your school subjects and grades</p>
           </div>
 
+          <div class="add-subject">
+            <button id="addSubjectBtn" class="btn-add-subject">
+              <i class="fas fa-plus"></i> Add New Subject
+            </button>
+          </div>
+
+          <!-- Add More Subject Modal -->
+          <!-- Add New Subject Modal -->
+          <div class="modal" id="addSubjectModal">
+            <div class="modal-content">
+              <span class="close">&times;</span>
+              <div class="modal-body">
+                <h2>Add New Subject</h2>
+                <form id="addSubjectForm">
+                  <label for="newSubjectName">Subject Name:</label>
+                  <input
+                    type="text"
+                    id="newSubjectName"
+                    name="newSubjectName"
+                    required
+                  />
+
+                  <label for="newTeacherName">Teacher:</label>
+                  <input
+                    type="text"
+                    id="newTeacherName"
+                    name="newTeacherName"
+                    required
+                  />
+
+                  <label for="newSubjectTime">Time:</label>
+                  <input
+                    type="text"
+                    id="newSubjectTime"
+                    name="newSubjectTime"
+                    required
+                  />
+
+                  <label for="newSubjectGrade">Current Grade:</label>
+                  <input
+                    type="text"
+                    id="newSubjectGrade"
+                    name="newSubjectGrade"
+                  />
+
+                  <label for="newSubjectDescription">Description:</label>
+                  <textarea
+                    id="newSubjectDescription"
+                    name="newSubjectDescription"
+                  ></textarea>
+
+                  <button type="submit" class="btn-add-subject">
+                    <i class="fas fa-check"></i> Save Subject
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+
           <div class="subjects-container">
             <!-- Subjects will be dynamically generated here -->
           </div>
@@ -114,6 +266,68 @@
       // Logout button
       const logoutBtn = document.getElementById("logoutBtn");
       logoutBtn.addEventListener("click", (e) => logout(e));
+    </script>
+
+    <script>
+      // Get elements
+      const addSubjectBtn = document.getElementById("addSubjectBtn");
+      const addSubjectModal = document.getElementById("addSubjectModal");
+      const closeBtns = document.querySelectorAll(".modal .close");
+
+      // Open modal when button clicked
+      addSubjectBtn.addEventListener("click", () => {
+        addSubjectModal.style.display = "block";
+      });
+
+      // Close modal when "x" clicked
+      closeBtns.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          btn.closest(".modal").style.display = "none";
+        });
+      });
+
+      // Close modal when clicking outside content
+      window.addEventListener("click", (e) => {
+        if (e.target === addSubjectModal) {
+          addSubjectModal.style.display = "none";
+        }
+      });
+
+      // Handle form submission (front-end only)
+      const addSubjectForm = document.getElementById("addSubjectForm");
+      const subjectsContainer = document.querySelector(".subjects-container");
+
+      addSubjectForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+
+        // Grab values
+        const name = document.getElementById("newSubjectName").value;
+        const teacher = document.getElementById("newTeacherName").value;
+        const time = document.getElementById("newSubjectTime").value;
+        const grade = document.getElementById("newSubjectGrade").value;
+        const description = document.getElementById(
+          "newSubjectDescription",
+        ).value;
+
+        // Create subject card dynamically
+        const subjectCard = document.createElement("div");
+        subjectCard.classList.add("subject-card");
+        subjectCard.innerHTML = `
+              <div class="subject-card-content">
+              <div class="subject-icon"><i class="fas fa-book"></i></div>
+              <h3>${name}</h3>
+          <p class="subject-meta"><i class="fas fa-chalkboard-teacher"></i> ${teacher}</p>
+          <p class="subject-meta"><i class="fas fa-clock"></i> ${time}</p>
+          <p class="grade-display">${grade}</p>
+          <p class="subject-badge">${description}</p>
+      `;
+
+        subjectsContainer.appendChild(subjectCard);
+
+        // Reset form + close modal
+        addSubjectForm.reset();
+        addSubjectModal.style.display = "none";
+      });
     </script>
   </body>
 </html>
