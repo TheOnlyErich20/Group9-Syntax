@@ -2,7 +2,8 @@
 // IMPORT FROM FIREBASE JS
 // =========================
 import { 
-    db, 
+    db,
+    auth,
     collection, 
     addDoc, 
     getDocs, 
@@ -14,11 +15,7 @@ import {
     getDoc,
     setDoc,
     serverTimestamp,
-    onSnapshot
-} from './firebase.js';
-
-import { 
-    getAuth, 
+    onSnapshot,
     signInWithEmailAndPassword, 
     createUserWithEmailAndPassword, 
     updateProfile,
@@ -26,9 +23,6 @@ import {
     signInWithPopup,
     signOut
 } from './firebase.js';
-
-// Initialize Firebase Auth
-const auth = getAuth();
 
 // Google Provider
 const googleProvider = new GoogleAuthProvider();
