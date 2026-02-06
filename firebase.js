@@ -1,6 +1,5 @@
 // Import modular Firebase API
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 import { 
     getFirestore, 
     collection, 
@@ -12,9 +11,20 @@ import {
     updateDoc, 
     deleteDoc, 
     getDoc,
+    setDoc,
     serverTimestamp,
     onSnapshot
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+import {
+    getAuth,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    updateProfile,
+    GoogleAuthProvider,
+    signInWithPopup,
+    signOut
+} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
 // Your Firebase config
 const firebaseConfig = {
@@ -29,19 +39,16 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
 const db = getFirestore(app);
 
 // Expose globally for non-module scripts
 window.firebaseApp = app;
-window.firebaseAuth = auth;
 window.firebaseDb = db;
 window.firebaseFirestore = db;
 
-// Export all Firestore functions for use in other scripts
+// Export all functions for use in other scripts
 export { 
-    auth, 
-    db, 
+    db,
     collection, 
     addDoc, 
     getDocs, 
@@ -51,6 +58,14 @@ export {
     updateDoc, 
     deleteDoc, 
     getDoc,
+    setDoc,
     serverTimestamp,
-    onSnapshot
+    onSnapshot,
+    getAuth,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
+    updateProfile,
+    GoogleAuthProvider,
+    signInWithPopup,
+    signOut
 };
