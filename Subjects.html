@@ -54,15 +54,18 @@
                 
                 console.log('Saving:', subjectData);
                 
-                // Save to Firestore using dynamic import
+                // Save to Firestore using the globally exposed db
                 async function saveToFirestore() {
                   try {
-                    // Dynamic import Firebase Firestore functions
-                    const { getFirestore, collection, addDoc } = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js');
-                    const db = getFirestore();
+                    // Dynamic import Firebase Firestore functions (modular syntax)
+                    const { collection, addDoc } = await import('https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js');
                     
-                    console.log('Firestore initialized:', db);
+                    // Use the already-initialized Firestore instance from firebase.js
+                    const db = window.firebaseDb;
                     
+                    console.log('Using Firestore:', db);
+                    
+                    // Use addDoc with collection - modular syntax
                     const docRef = await addDoc(collection(db, 'subjects'), subjectData);
                     console.log('Saved with ID:', docRef.id);
                     alert('Subject added successfully!');
