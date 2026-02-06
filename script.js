@@ -8,8 +8,6 @@ import {
     collection, 
     addDoc, 
     getDocs, 
-    query, 
-    orderBy, 
     where, 
     doc, 
     updateDoc, 
@@ -168,22 +166,33 @@ async function loadSubmissions(taskId, subjectId) {
     document.getElementById('viewSubmissionsModal').style.display = 'block';
     
     try {
-        const q = query(
+        // Filter by taskId
+        const filterQuery = query(
             collection(db, 'submissions'),
-            where('taskId', '==', taskId),
-            orderBy('submittedAt', 'desc')
+            where('taskId', '==', taskId)
         );
-        const snapshot = await getDocs(q);
+        const snapshot = await getDocs(filterQuery);
         
-        if (snapshot.empty) {
+        // Sort by submittedAt descending in JavaScript
+        let submissions = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        
+        submissions.sort((a, b) => {
+            const aTime = a.submittedAt?.toMillis() || 0;
+            const bTime = b.submittedAt?.toMillis() || 0;
+            return bTime - aTime;
+        });
+        
+        if (submissions.length === 0) {
             submissionsList.innerHTML = '<p>No submissions yet.</p>';
             return;
         }
         
         let html = '<div style="max-height: 400px; overflow-y: auto;">';
-        snapshot.forEach(doc => {
-            const submission = doc.data();
-            const submittedAt = submission.submittedAt.toDate ? submission.submittedAt.toDate() : new Date(submission.submittedAt);
+        for (const submission of submissions) {
+            const submittedAt = submission.submittedAt?.toDate ? submission.submittedAt.toDate() : new Date(submission.submittedAt);
             
             html += `
                 <div style="padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 10px;">
@@ -199,7 +208,7 @@ async function loadSubmissions(taskId, subjectId) {
                     ` : ''}
                 </div>
             `;
-        });
+        }
         html += '</div>';
         submissionsList.innerHTML = html;
     } catch (err) {
@@ -210,17 +219,26 @@ async function loadSubmissions(taskId, subjectId) {
 
 async function loadTasksForSubject(subjectId) {
     try {
-        const q = query(
+        // Get tasks filtered by subjectId
+        const filterQuery = query(
             collection(db, 'tasks'),
-            where('subjectId', '==', subjectId),
-            orderBy('createdAt', 'desc')
+            where('subjectId', '==', subjectId)
         );
-        const snapshot = await getDocs(q);
+        const snapshot = await getDocs(filterQuery);
         
-        return snapshot.docs.map(doc => ({
+        let tasks = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
         }));
+        
+        // Sort by createdAt descending in JavaScript
+        tasks.sort((a, b) => {
+            const aTime = a.createdAt?.toMillis() || 0;
+            const bTime = b.createdAt?.toMillis() || 0;
+            return bTime - aTime;
+        });
+        
+        return tasks;
     } catch (err) {
         console.error('Error loading tasks:', err);
         return [];
@@ -336,22 +354,47 @@ async function loadSubjects() {
     subjectsGrid.innerHTML = '<p>Loading subjects...</p>';
     
     try {
-        let q;
-        if (isInstructor) {
-            q = query(
-                collection(db, 'subjects'),
-                where('instructorId', '==', userData.id),
-                orderBy('createdAt', 'desc')
-            );
-        } else {
-            q = query(collection(db, 'subjects'), orderBy('createdAt', 'desc'));
-        }
+        let subjects = [];
         
-        const snapshot = await getDocs(q);
+        if (isInstructor) {
+            // For instructors, filter by instructorId first
+            const filterQuery = query(
+                collection(db, 'subjects'),
+                where('instructorId', '==', userData.id)
+            );
+            const snapshot = await getDocs(filterQuery);
+            
+            // Sort in JavaScript (no composite index needed)
+            snapshot.forEach(doc => {
+                subjects.push({ id: doc.id, ...doc.data() });
+            });
+            
+            // Sort by createdAt descending
+            subjects.sort((a, b) => {
+                const aTime = a.createdAt?.toMillis() || 0;
+                const bTime = b.createdAt?.toMillis() || 0;
+                return bTime - aTime;
+            });
+        } else {
+            // For students, get all subjects and sort
+            const allQuery = query(collection(db, 'subjects'));
+            const snapshot = await getDocs(allQuery);
+            
+            snapshot.forEach(doc => {
+                subjects.push({ id: doc.id, ...doc.data() });
+            });
+            
+            // Sort by createdAt descending
+            subjects.sort((a, b) => {
+                const aTime = a.createdAt?.toMillis() || 0;
+                const bTime = b.createdAt?.toMillis() || 0;
+                return bTime - aTime;
+            });
+        }
         
         subjectsGrid.innerHTML = '';
         
-        if (snapshot.empty) {
+        if (subjects.length === 0) {
             subjectsGrid.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-book-open"></i>
@@ -361,9 +404,8 @@ async function loadSubjects() {
             return;
         }
         
-        for (const subjectDoc of snapshot.docs) {
-            const subject = subjectDoc.data();
-            const subjectCard = await createSubjectCard(subjectDoc.id, subject, userData);
+        for (const subject of subjects) {
+            const subjectCard = await createSubjectCard(subject.id, subject, userData);
             subjectsGrid.appendChild(subjectCard);
         }
     } catch (err) {
