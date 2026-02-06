@@ -147,61 +147,20 @@
             </button>
           </form>
 
-          <!-- Inline form handler -->
+          <!-- Inline form handler - waits for Firebase to load -->
           <script>
-            (function() {
+            function initAddSubjectForm() {
               const form = document.getElementById('addSubjectForm');
               const modal = document.getElementById('addSubjectModal');
               const addBtn = document.getElementById('addSubjectBtn');
               
-              if (form) {
-                form.addEventListener('submit', async function(e) {
-                  e.preventDefault();
-                  console.log('Form submitted');
-                  
-                  const name = document.getElementById('newSubjectName').value.trim();
-                  const teacher = document.getElementById('newTeacherName').value.trim();
-                  const time = document.getElementById('newSubjectTime').value.trim();
-                  const description = document.getElementById('newSubjectDescription').value.trim();
-                  
-                  const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-                  
-                  if (!name || !teacher || !time) {
-                    alert('Please fill in all required fields');
-                    return;
-                  }
-                  
-                  const subjectData = {
-                    name: name,
-                    teacher: teacher,
-                    time: time,
-                    description: description,
-                    instructorId: userData.id,
-                    instructorName: userData.name,
-                    createdAt: new Date()
-                  };
-                  
-                  console.log('Saving:', subjectData);
-                  
-                  // Save to Firestore
-                  firebase.firestore().collection('subjects').add(subjectData)
-                    .then(function(docRef) {
-                      console.log('Saved with ID:', docRef.id);
-                      alert('Subject added successfully!');
-                      form.reset();
-                      modal.style.display = 'none';
-                      
-                      // Refresh page to show new subject
-                      setTimeout(function() {
-                        location.reload();
-                      }, 500);
-                    })
-                    .catch(function(err) {
-                      console.error('Error:', err);
-                      alert('Error saving: ' + err.message);
-                    });
-                });
+              if (!form) {
+                console.log('Form not found, retrying...');
+                setTimeout(initAddSubjectForm, 100);
+                return;
               }
+              
+              console.log('Add Subject form initialized');
               
               // Open modal handler
               if (addBtn && modal) {
@@ -216,7 +175,62 @@
                   modal.style.display = 'none';
                 }
               });
-            })();
+              
+              form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                console.log('Form submitted');
+                
+                const name = document.getElementById('newSubjectName').value.trim();
+                const teacher = document.getElementById('newTeacherName').value.trim();
+                const time = document.getElementById('newSubjectTime').value.trim();
+                const description = document.getElementById('newSubjectDescription').value.trim();
+                
+                const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+                
+                if (!name || !teacher || !time) {
+                  alert('Please fill in all required fields');
+                  return;
+                }
+                
+                const subjectData = {
+                  name: name,
+                  teacher: teacher,
+                  time: time,
+                  description: description,
+                  instructorId: userData.id,
+                  instructorName: userData.name,
+                  createdAt: new Date()
+                };
+                
+                console.log('Saving:', subjectData);
+                
+                // Wait for Firebase to be ready
+                function saveToFirestore() {
+                  if (typeof firebase !== 'undefined' && firebase.firestore) {
+                    firebase.firestore().collection('subjects').add(subjectData)
+                      .then(function(docRef) {
+                        console.log('Saved with ID:', docRef.id);
+                        alert('Subject added successfully!');
+                        form.reset();
+                        modal.style.display = 'none';
+                        location.reload();
+                      })
+                      .catch(function(err) {
+                        console.error('Error:', err);
+                        alert('Error saving: ' + err.message);
+                      });
+                  } else {
+                    console.log('Waiting for Firebase...');
+                    setTimeout(saveToFirestore, 200);
+                  }
+                }
+                
+                saveToFirestore();
+              });
+            }
+            
+            // Start initialization
+            initAddSubjectForm();
           </script>
         </div>
       </div>
