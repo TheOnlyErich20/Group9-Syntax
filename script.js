@@ -63,6 +63,8 @@ async function initializeSubjects() {
     const addBtn = document.getElementById('addSubjectBtn');
     const addModal = document.getElementById('addSubjectModal');
     const addForm = document.getElementById('addSubjectForm');
+    const editModal = document.getElementById('editSubjectModal');
+    const editForm = document.getElementById('editSubjectForm');
     const addTaskModal = document.getElementById('addTaskModal');
     const addTaskForm = document.getElementById('addTaskForm');
     const submissionModal = document.getElementById('submissionModal');
@@ -73,12 +75,13 @@ async function initializeSubjects() {
     const userData = JSON.parse(localStorage.getItem("userData"));
     const isInstructor = userData?.role === 'instructor';
 
-    // Show/hide add button based on role
-    if (addBtn) {
-        addBtn.style.display = isInstructor ? 'flex' : 'none';
+    // Redirect students who try to access instructor-only pages
+    if (!isInstructor && addBtn) {
+        addBtn.style.display = 'none';
     }
 
     let subjects = [];
+    let currentSubjectIndex = null;
 
     // Load subjects from Firestore
     try {
@@ -98,8 +101,7 @@ async function initializeSubjects() {
         // Fallback dummy data
         subjects = [
             { id: "demo1", name: "Mathematics", teacher: "Mr. Anderson", time: "08:00 AM - 09:30 AM", description: "Advanced Calculus and Algebra" },
-            { id: "demo2", name: "Physics", teacher: "Ms. Curie", time: "10:00 AM - 11:30 AM", description: "Fundamentals of Physics" },
-            { id: "demo3", name: "Computer Science", teacher: "Mr. Turing", time: "01:00 PM - 02:30 PM", description: "Algorithms and Data Structures" }
+            { id: "demo2", name: "Physics", teacher: "Ms. Curie", time: "10:00 AM - 11:30 AM", description: "Fundamentals of Physics" }
         ];
     }
 
@@ -128,6 +130,7 @@ async function initializeSubjects() {
             item.addEventListener('click', () => {
                 document.querySelectorAll('.subject-list-item').forEach(i => i.classList.remove('active'));
                 item.classList.add('active');
+                currentSubjectIndex = item.dataset.index;
                 renderSubjectDetails(item.dataset.index);
             });
         });
@@ -160,6 +163,7 @@ async function initializeSubjects() {
         });
 
         if (isInstructor) {
+            // INSTRUCTOR VIEW
             detailsContainer.innerHTML = `
                 <div class="detail-header">
                     <h2>${escapeHtml(sub.name)}</h2>
@@ -168,6 +172,14 @@ async function initializeSubjects() {
                         <span><i class="fas fa-clock"></i> ${escapeHtml(sub.time || 'TBA')}</span>
                     </div>
                     <p class="detail-description">${escapeHtml(sub.description || 'No description available.')}</p>
+                    <div class="detail-actions" style="margin-top: 15px;">
+                        <button onclick="openEditSubjectModal('${sub.id}')" class="btn-action" style="background: rgba(59, 130, 246, 0.2); border: none; padding: 8px 16px; border-radius: 6px; color: #60a5fa; cursor: pointer; margin-right: 10px;">
+                            <i class="fas fa-edit"></i> Edit Subject
+                        </button>
+                        <button onclick="deleteSubject('${sub.id}')" class="btn-action" style="background: rgba(239, 68, 68, 0.2); border: none; padding: 8px 16px; border-radius: 6px; color: #f87171; cursor: pointer;">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
                 </div>
 
                 <div class="lessons-container" style="margin-top: 20px;">
@@ -186,8 +198,12 @@ async function initializeSubjects() {
                                         <i class="fas fa-clock"></i> Due: ${new Date(task.dueDate?.toMillis?.() || task.dueDate).toLocaleDateString()}
                                         <span style="margin-left: 10px;"><i class="fas fa-star"></i> ${task.maxScore || 100} pts</span>
                                     </p>
+                                    ${task.description ? `<p style="font-size: 12px; color: #888; margin: 5px 0 0;">${escapeHtml(task.description)}</p>` : ''}
                                 </div>
                                 <div class="task-actions" style="display: flex; gap: 8px;">
+                                    <button onclick="openEditTaskModal('${task.id}', '${sub.id}')" class="btn-action" title="Edit" style="background: rgba(59, 130, 246, 0.2); border: none; padding: 8px 12px; border-radius: 6px; color: #60a5fa; cursor: pointer;">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
                                     <button onclick="deleteTask('${sub.id}', '${task.id}')" class="btn-action" title="Delete" style="background: rgba(239, 68, 68, 0.2); border: none; padding: 8px 12px; border-radius: 6px; color: #f87171; cursor: pointer;">
                                         <i class="fas fa-trash"></i>
                                     </button>
@@ -198,6 +214,7 @@ async function initializeSubjects() {
                 </div>
             `;
         } else {
+            // STUDENT VIEW
             detailsContainer.innerHTML = `
                 <div class="detail-header">
                     <h2>${escapeHtml(sub.name)}</h2>
@@ -219,6 +236,7 @@ async function initializeSubjects() {
                                         <i class="fas fa-clock"></i> Due: ${new Date(task.dueDate?.toMillis?.() || task.dueDate).toLocaleDateString()}
                                         <span style="margin-left: 10px;"><i class="fas fa-star"></i> ${task.maxScore || 100} pts</span>
                                     </p>
+                                    ${task.description ? `<p style="font-size: 12px; color: #888; margin: 5px 0 0;">${escapeHtml(task.description)}</p>` : ''}
                                 </div>
                                 <button onclick="openSubmissionModal('${task.id}', '${sub.id}')" class="login-btn" style="width: auto; padding: 8px 16px; background: #4ade80;">
                                     <i class="fas fa-paper-plane"></i> Submit
@@ -232,11 +250,49 @@ async function initializeSubjects() {
     }
 
     // =========================
-    // OPEN MODALS
+    // MODAL FUNCTIONS
     // =========================
     window.openTaskModal = function(subjectId) {
         document.getElementById('currentSubjectId').value = subjectId;
         addTaskModal.style.display = 'block';
+    };
+
+    window.openEditTaskModal = async function(taskId, subjectId) {
+        try {
+            const taskDoc = await getDoc(doc(db, "tasks", taskId));
+            if (taskDoc.exists()) {
+                const task = taskDoc.data();
+                document.getElementById('editTaskId').value = taskId;
+                document.getElementById('editTaskSubjectId').value = subjectId;
+                document.getElementById('editTaskTitle').value = task.title || '';
+                document.getElementById('editTaskDescription').value = task.description || '';
+                
+                const dueDate = task.dueDate?.toMillis?.() || new Date(task.dueDate);
+                document.getElementById('editTaskDueDate').value = new Date(dueDate).toISOString().slice(0, 16);
+                
+                document.getElementById('editTaskMaxScore').value = task.maxScore || 100;
+                
+                // Show edit task modal
+                if (document.getElementById('editTaskModal')) {
+                    document.getElementById('editTaskModal').style.display = 'block';
+                }
+            }
+        } catch (err) {
+            console.error("Error loading task:", err);
+            alert("Error loading task: " + err.message);
+        }
+    };
+
+    window.openEditSubjectModal = function(subjectId) {
+        const subject = subjects.find(s => s.id === subjectId);
+        if (subject) {
+            document.getElementById('editSubjectId').value = subjectId;
+            document.getElementById('editSubjectName').value = subject.name || '';
+            document.getElementById('editTeacherName').value = subject.teacher || '';
+            document.getElementById('editSubjectTime').value = subject.time || '';
+            document.getElementById('editSubjectDescription').value = subject.description || '';
+            editModal.style.display = 'block';
+        }
     };
 
     window.openSubmissionModal = function(taskId, subjectId) {
@@ -245,13 +301,41 @@ async function initializeSubjects() {
         submissionModal.style.display = 'block';
     };
 
+    window.deleteSubject = async function(subjectId) {
+        if (!confirm("Are you sure you want to delete this subject and all its tasks?")) return;
+
+        try {
+            // Delete subject
+            await deleteDoc(doc(db, "subjects", subjectId));
+            
+            // Delete all tasks for this subject
+            const tasksQuery = query(collection(db, "tasks"), where("subjectId", "==", subjectId));
+            const tasksSnapshot = await getDocs(tasksQuery);
+            for (const taskDoc of tasksSnapshot.docs) {
+                await deleteDoc(doc(db, "tasks", taskDoc.id));
+            }
+            
+            // Remove from local array
+            subjects = subjects.filter(s => s.id !== subjectId);
+            renderSubjects();
+            detailsContainer.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-book-open"></i>
+                    <p>Select a subject from the list to view details.</p>
+                </div>
+            `;
+        } catch (err) {
+            console.error("Error deleting subject:", err);
+            alert("Error deleting subject: " + err.message);
+        }
+    };
+
     window.deleteTask = async function(subjectId, taskId) {
         if (!confirm("Are you sure you want to delete this task?")) return;
 
         try {
             await deleteDoc(doc(db, "tasks", taskId));
-            const activeIndex = document.querySelector('.subject-list-item.active')?.dataset.index || 0;
-            renderSubjectDetails(activeIndex);
+            renderSubjectDetails(currentSubjectIndex);
         } catch (err) {
             console.error("Error deleting task:", err);
             alert("Error deleting task: " + err.message);
@@ -292,6 +376,47 @@ async function initializeSubjects() {
     });
 
     // =========================
+    // EDIT SUBJECT (FORM)
+    // =========================
+    editForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const subjectId = document.getElementById('editSubjectId').value;
+
+        try {
+            await updateDoc(doc(db, "subjects", subjectId), {
+                name: document.getElementById('editSubjectName').value.trim(),
+                teacher: document.getElementById('editTeacherName').value.trim(),
+                time: document.getElementById('editSubjectTime').value.trim(),
+                description: document.getElementById('editSubjectDescription').value.trim(),
+                updatedAt: serverTimestamp()
+            });
+
+            // Update local array
+            const index = subjects.findIndex(s => s.id === subjectId);
+            if (index !== -1) {
+                subjects[index] = {
+                    ...subjects[index],
+                    name: document.getElementById('editSubjectName').value.trim(),
+                    teacher: document.getElementById('editTeacherName').value.trim(),
+                    time: document.getElementById('editSubjectTime').value.trim(),
+                    description: document.getElementById('editSubjectDescription').value.trim()
+                };
+            }
+
+            renderSubjects();
+            if (currentSubjectIndex !== null) {
+                renderSubjectDetails(currentSubjectIndex);
+            }
+            editForm.reset();
+            editModal.style.display = 'none';
+        } catch (err) {
+            console.error("Error updating subject:", err);
+            alert("Error updating subject: " + err.message);
+        }
+    });
+
+    // =========================
     // ADD TASK (FORM)
     // =========================
     addTaskForm?.addEventListener('submit', async (e) => {
@@ -301,20 +426,53 @@ async function initializeSubjects() {
             title: document.getElementById('newTaskTitle').value.trim(),
             description: document.getElementById('newTaskDescription').value.trim(),
             dueDate: new Date(document.getElementById('newTaskDueDate').value),
-            maxScore: parseInt(document.getElementById('newTaskMaxScore').value),
+            maxScore: parseInt(document.getElementById('newTaskMaxScore').value) || 100,
             subjectId: document.getElementById('currentSubjectId').value,
             createdAt: serverTimestamp()
         };
 
         try {
             await addDoc(collection(db, "tasks"), task);
-            const activeIndex = document.querySelector('.subject-list-item.active')?.dataset.index || 0;
-            renderSubjectDetails(activeIndex);
+            if (currentSubjectIndex !== null) {
+                renderSubjectDetails(currentSubjectIndex);
+            }
             addTaskForm.reset();
             addTaskModal.style.display = 'none';
         } catch (err) {
             console.error("Error adding task:", err);
             alert("Error adding task: " + err.message);
+        }
+    });
+
+    // =========================
+    // EDIT TASK (FORM)
+    // =========================
+    const editTaskForm = document.getElementById('editTaskForm');
+    editTaskForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const taskId = document.getElementById('editTaskId').value;
+        const subjectId = document.getElementById('editTaskSubjectId').value;
+
+        try {
+            await updateDoc(doc(db, "tasks", taskId), {
+                title: document.getElementById('editTaskTitle').value.trim(),
+                description: document.getElementById('editTaskDescription').value.trim(),
+                dueDate: new Date(document.getElementById('editTaskDueDate').value),
+                maxScore: parseInt(document.getElementById('editTaskMaxScore').value) || 100,
+                updatedAt: serverTimestamp()
+            });
+
+            if (currentSubjectIndex !== null) {
+                renderSubjectDetails(currentSubjectIndex);
+            }
+            editTaskForm.reset();
+            if (document.getElementById('editTaskModal')) {
+                document.getElementById('editTaskModal').style.display = 'none';
+            }
+        } catch (err) {
+            console.error("Error updating task:", err);
+            alert("Error updating task: " + err.message);
         }
     });
 
