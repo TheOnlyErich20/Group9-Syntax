@@ -92,7 +92,7 @@
             <p>Track your school subjects and grades</p>
           </div>
 
-          <!-- New Split Layout -->
+          <!-- Split Layout -->
           <div class="subjects-content-wrapper">
             <!-- Left Sidebar: List -->
             <div class="subjects-sidebar">
@@ -103,7 +103,7 @@
                 </button>
               </div>
               <div class="subjects-list" id="subjectsList">
-                <!-- List items will be injected here -->
+                <!-- List items injected here -->
               </div>
             </div>
 
@@ -115,49 +115,193 @@
               </div>
             </div>
           </div>
-
-          <!-- Add Subject Modal (Kept) -->
-          <div class="modal" id="addSubjectModal">
-            <div class="modal-content">
-              <span class="close">&times;</span>
-
-              <div class="modal-body">
-                <h2>Add New Subject</h2>
-
-                <form id="addSubjectForm">
-                  <div class="form-group">
-                    <label>Subject Name</label>
-                    <input type="text" id="newSubjectName" required placeholder="e.g. Mathematics" />
-                  </div>
-
-                  <div class="form-group">
-                    <label>Teacher</label>
-                    <input type="text" id="newTeacherName" required placeholder="e.g. Mr. Anderson" />
-                  </div>
-
-                  <div class="form-group">
-                    <label>Time</label>
-                    <input type="text" id="newSubjectTime" required placeholder="e.g. 08:00 AM - 09:30 AM" />
-                  </div>
-                  
-                  <div class="form-group">
-                    <label>Description</label>
-                    <textarea id="newSubjectDescription" rows="5" placeholder="Brief description of the subject..."></textarea>
-                  </div>
-
-                  <button type="submit" class="btn-add-subject">
-                    <i class="fas fa-check"></i> Save Subject
-                  </button>
-                </form>
-              </div>
-            </div>
-          </div>
         </section>
       </main>
     </div>
 
+    <!-- Add Subject Modal -->
+    <div class="modal" id="addSubjectModal">
+      <div class="modal-content">
+        <span class="close">&times;</span>
+        <div class="modal-body">
+          <h2>Add New Subject</h2>
+          <form id="addSubjectForm">
+            <div class="form-group">
+              <label>Subject Name</label>
+              <input type="text" id="newSubjectName" required placeholder="e.g. Mathematics" />
+            </div>
+            <div class="form-group">
+              <label>Teacher</label>
+              <input type="text" id="newTeacherName" required placeholder="e.g. Mr. Anderson" />
+            </div>
+            <div class="form-group">
+              <label>Time</label>
+              <input type="text" id="newSubjectTime" required placeholder="e.g. 08:00 AM - 09:30 AM" />
+            </div>
+            <div class="form-group">
+              <label>Description</label>
+              <textarea id="newSubjectDescription" rows="5" placeholder="Brief description..."></textarea>
+            </div>
+            <button type="submit" class="btn-add-subject">
+              <i class="fas fa-check"></i> Save Subject
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Task Modal -->
+    <div class="modal" id="addTaskModal">
+      <div class="modal-content">
+        <span class="close" onclick="closeTaskModal()">&times;</span>
+        <div class="modal-body">
+          <h2 id="taskModalTitle">Add New Task</h2>
+          <form id="addTaskForm">
+            <input type="hidden" id="editTaskId" value="" />
+            <div class="form-group">
+              <label>Task Title</label>
+              <input type="text" id="taskTitle" required placeholder="e.g. Assignment 1" />
+            </div>
+            <div class="form-group">
+              <label>Description</label>
+              <textarea id="taskDescription" rows="3" placeholder="Task instructions..."></textarea>
+            </div>
+            <div class="form-group">
+              <label>Due Date</label>
+              <input type="datetime-local" id="taskDueDate" required />
+            </div>
+            <div class="form-group">
+              <label>Max Score</label>
+              <input type="number" id="taskMaxScore" required placeholder="100" min="1" />
+            </div>
+            <div class="form-group">
+              <label>Attachment (Optional)</label>
+              <input type="file" id="taskFile" accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png" />
+            </div>
+            <button type="submit" class="btn-add-subject">
+              <i class="fas fa-check"></i> <span id="taskBtnText">Save Task</span>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- File Upload Modal -->
+    <div class="modal" id="uploadFileModal">
+      <div class="modal-content">
+        <span class="close" onclick="closeUploadModal()">&times;</span>
+        <div class="modal-body">
+          <h2>Upload Material</h2>
+          <form id="uploadFileForm">
+            <input type="hidden" id="uploadSubjectId" value="" />
+            <div class="form-group">
+              <label>File Title</label>
+              <input type="text" id="fileTitle" required placeholder="e.g. Chapter 1 Slides" />
+            </div>
+            <div class="form-group">
+              <label>Select File</label>
+              <input type="file" id="materialFile" accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.mp4" required />
+            </div>
+            <button type="submit" class="btn-add-subject">
+              <i class="fas fa-cloud-upload-alt"></i> Upload to Supabase
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Submission Modal -->
+    <div class="modal" id="submissionModal">
+      <div class="modal-content">
+        <span class="close" onclick="closeSubmissionModal()">&times;</span>
+        <div class="modal-body">
+          <h2>Submit Assignment</h2>
+          <form id="submissionForm">
+            <input type="hidden" id="submissionTaskId" value="" />
+            <input type="hidden" id="submissionSubjectId" value="" />
+            <div class="form-group">
+              <label>Your File</label>
+              <input type="file" id="submissionFile" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required />
+            </div>
+            <div class="form-group">
+              <label>Comments (Optional)</label>
+              <textarea id="submissionComments" rows="3" placeholder="Any comments for your instructor..."></textarea>
+            </div>
+            <button type="submit" class="btn-add-subject">
+              <i class="fas fa-paper-plane"></i> Submit
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Theme Script -->
+    <script>
+      (function() {
+        const theme = localStorage.getItem("theme") || "dark";
+        if (theme === "light") {
+          document.body.classList.add("light-mode");
+        }
+      })();
+    </script>
+
     <!-- Scripts -->
     <script type="module" src="firebase.js"></script>
     <script type="module" src="script.js"></script>
+
+    <!-- Task Management Functions -->
+    <script>
+      // Task Modal Functions
+      window.openTaskModal = function(subjectId, taskId = null) {
+        const modal = document.getElementById('addTaskModal');
+        const form = document.getElementById('addTaskForm');
+        const title = document.getElementById('taskModalTitle');
+        const btnText = document.getElementById('taskBtnText');
+        
+        if (taskId) {
+          title.textContent = 'Edit Task';
+          btnText.textContent = 'Update Task';
+          // Load existing task data (would be populated from script.js)
+        } else {
+          title.textContent = 'Add New Task';
+          btnText.textContent = 'Save Task';
+          form.reset();
+        }
+        
+        modal.style.display = 'block';
+      };
+
+      window.closeTaskModal = function() {
+        document.getElementById('addTaskModal').style.display = 'none';
+      };
+
+      // Upload Modal Functions
+      window.openUploadModal = function(subjectId) {
+        document.getElementById('uploadSubjectId').value = subjectId;
+        document.getElementById('uploadFileModal').style.display = 'block';
+      };
+
+      window.closeUploadModal = function() {
+        document.getElementById('uploadFileModal').style.display = 'none';
+      };
+
+      // Submission Modal Functions
+      window.openSubmissionModal = function(taskId, subjectId) {
+        document.getElementById('submissionTaskId').value = taskId;
+        document.getElementById('submissionSubjectId').value = subjectId;
+        document.getElementById('submissionModal').style.display = 'block';
+      };
+
+      window.closeSubmissionModal = function() {
+        document.getElementById('submissionModal').style.display = 'none';
+      };
+
+      // Close modals when clicking outside
+      window.addEventListener('click', function(e) {
+        if (e.target.classList.contains('modal')) {
+          e.target.style.display = 'none';
+        }
+      });
+    </script>
   </body>
 </html>
