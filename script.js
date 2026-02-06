@@ -2,10 +2,51 @@
 // IMPORT FIREBASE AUTH
 // =========================
 import { auth } from './firebase.js';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, addDoc, query, where, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 const db = getFirestore();
+
+// Google Auth Provider
+const googleProvider = new GoogleAuthProvider();
+
+// Global Google Sign-In function
+window.signInWithGoogle = async function() {
+    try {
+        const result = await auth.signInWithPopup(googleProvider);
+        const user = result.user;
+        
+        // Store user data
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("userData", JSON.stringify({
+            id: user.uid,
+            name: user.displayName || user.email,
+            email: user.email,
+            role: "student" // Default role for Google sign-in
+        }));
+        
+        // Check if user exists in Firestore
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+            const userData = userDoc.data();
+            localStorage.setItem("userData", JSON.stringify({
+                id: user.uid,
+                name: userData.fullName || user.displayName || user.email,
+                email: user.email,
+                role: userData.role || "student"
+            }));
+        }
+        
+        window.location.href = "index.html";
+    } catch (error) {
+        console.error("Google sign-in error:", error);
+        const errorEl = document.getElementById("loginError");
+        if (errorEl) {
+            errorEl.textContent = error.message;
+            errorEl.style.display = "block";
+        }
+    }
+};
 
 // =========================
 // INSTRUCTOR ACCESS CODES
