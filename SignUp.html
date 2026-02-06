@@ -67,7 +67,7 @@
               <input
                 type="email"
                 id="signupEmail"
-                placeholder="your.email@icct.edu.ph"
+                placeholder="Email"
                 required
               />
             </div>
@@ -86,70 +86,34 @@
               <input type="text" id="course" placeholder="Course" required />
             </div>
 
-            <!-- Role Selection -->
-            <div class="form-group">
-              <label><i class="fas fa-user-tag"></i> Account Type</label>
-              <div class="role-selector">
-                <label class="role-option student-role active">
-                  <input type="radio" name="role" value="student" checked />
-                  <i class="fas fa-user-graduate"></i>
-                  <span>Student</span>
-                </label>
-                <label class="role-option instructor-role">
-                  <input type="radio" name="role" value="instructor" />
-                  <i class="fas fa-chalkboard-teacher"></i>
-                  <span>Instructor</span>
-                </label>
-              </div>
-            </div>
-
-            <!-- Instructor Access Code (hidden by default) -->
-            <div class="form-group" id="accessCodeGroup" style="display: none;">
-              <label for="accessCode"
-                ><i class="fas fa-key"></i> Instructor Access Code</label
-              >
-              <input
-                type="password"
-                id="accessCode"
-                placeholder="Enter your access code"
-              />
-              <small style="color: #aaa; font-size: 12px;">
-                <i class="fas fa-info-circle"></i> Contact admin to get access code
-              </small>
-            </div>
-
             <div class="form-group">
               <label for="signupPassword"
                 ><i class="fas fa-lock"></i> Password</label
               >
-              <div class="input-wrapper">
-                <input
-                  type="password"
-                  id="signupPassword"
-                  placeholder="••••••••"
-                  required
-                />
-                <span class="toggle-password" id="toggleSignupPassword"
-                  ><i class="fas fa-eye-slash"></i
-                ></span>
-              </div>
+              <input
+                type="password"
+                id="signupPassword"
+                placeholder="••••••••"
+                required
+              />
+              <span class="toggle-password" id="toggleSignupPassword"
+                ><i class="fas fa-eye-slash"></i
+              ></span>
             </div>
 
             <div class="form-group">
               <label for="confirmPassword"
                 ><i class="fas fa-lock"></i> Confirm Password</label
               >
-              <div class="input-wrapper">
-                <input
-                  type="password"
-                  id="confirmPassword"
-                  placeholder="••••••••"
-                  required
-                />
-                <span class="toggle-password" id="toggleConfirmPassword"
-                  ><i class="fas fa-eye-slash"></i
-                ></span>
-              </div>
+              <input
+                type="password"
+                id="confirmPassword"
+                placeholder="••••••••"
+                required
+              />
+              <span class="toggle-password" id="toggleConfirmPassword"
+                ><i class="fas fa-eye-slash"></i
+              ></span>
             </div>
 
             <button type="submit" class="login-btn">Create Account</button>
@@ -186,117 +150,10 @@
               school
             </li>
           </ul>
-          
-          <!-- Role Benefits -->
-          <div class="role-benefits">
-            <div class="student-benefits">
-              <h4><i class="fas fa-user-graduate"></i> For Students</h4>
-              <p>View subjects, submit assignments, track grades, and communicate with instructors.</p>
-            </div>
-            <div class="instructor-benefits" style="display: none;">
-              <h4><i class="fas fa-chalkboard-teacher"></i> For Instructors</h4>
-              <p>Create subjects, add tasks, upload materials, and manage student submissions.</p>
-            </div>
-          </div>
         </div>
       </div>
     </section>
 
-    <style>
-      .role-selector {
-        display: flex;
-        gap: 10px;
-        margin-top: 8px;
-      }
-      
-      .role-option {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 15px 10px;
-        border: 2px solid rgba(255, 255, 255, 0.1);
-        border-radius: 10px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        background: rgba(255, 255, 255, 0.05);
-      }
-      
-      .role-option:hover {
-        border-color: rgba(255, 255, 255, 0.3);
-        background: rgba(255, 255, 255, 0.1);
-      }
-      
-      .role-option.active {
-        border-color: #4ade80;
-        background: rgba(74, 222, 128, 0.1);
-      }
-      
-      .role-option input {
-        display: none;
-      }
-      
-      .role-option i {
-        font-size: 24px;
-        margin-bottom: 8px;
-      }
-      
-      .role-option span {
-        font-size: 14px;
-        font-weight: 500;
-      }
-      
-      .student-role.active i,
-      .student-role:hover i {
-        color: #60a5fa;
-      }
-      
-      .instructor-role.active i,
-      .instructor-role:hover i {
-        color: #f59e0b;
-      }
-      
-      .role-benefits {
-        margin-top: 30px;
-        padding-top: 20px;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-      }
-      
-      .role-benefits h4 {
-        margin-bottom: 10px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-      
-      .role-benefits h4 i {
-        color: #4ade80;
-      }
-      
-      .role-benefits p {
-        font-size: 14px;
-        color: #aaa;
-        line-height: 1.6;
-      }
-      
-      /* Password input wrapper styles */
-      .input-wrapper {
-        position: relative;
-        display: flex;
-        align-items: center;
-      }
-      
-      .input-wrapper input {
-        padding-right: 45px !important;
-      }
-      
-      .toggle-password:hover {
-        color: #4ade80;
-      }
-    </style>
-
-    <script type="module" src="supabase.js"></script>
-    <script type="module" src="firebase.js"></script>
     <script type="module" src="script.js"></script>
   </body>
 </html>
