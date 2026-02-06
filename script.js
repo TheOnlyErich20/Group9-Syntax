@@ -344,45 +344,95 @@ async function initializeSubjects() {
     // =========================
     // OPEN ADD MODAL
     // =========================
-    addBtn?.addEventListener('click', () => {
-        addModal.style.display = 'block';
-    });
-
-    // =========================
-    // CLOSE MODALS
-    // =========================
-    document.querySelectorAll('.modal .close').forEach(btn => {
-        btn.addEventListener('click', () => {
-            btn.closest('.modal').style.display = 'none';
+    function initAddSubjectBtn() {
+        const btn = document.getElementById('addSubjectBtn');
+        const modal = document.getElementById('addSubjectModal');
+        
+        if (btn && modal) {
+            btn.addEventListener('click', () => {
+                modal.style.display = 'block';
+            });
+        }
+        
+        // Close modal when clicking outside
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
         });
-    });
+        
+        // Close button handlers for all modals
+        document.querySelectorAll('.modal .close').forEach(btn => {
+            btn.addEventListener('click', () => {
+                btn.closest('.modal').style.display = 'none';
+            });
+        });
+    }
+    
+    initAddSubjectBtn();
 
     // =========================
     // ADD SUBJECT (FORM)
     // =========================
-    addForm?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const subjectData = {
-            name: document.getElementById('newSubjectName').value.trim(),
-            teacher: document.getElementById('newTeacherName').value.trim(),
-            time: document.getElementById('newSubjectTime').value.trim(),
-            description: document.getElementById('newSubjectDescription').value.trim(),
-            instructorId: userData.id,
-            createdAt: serverTimestamp()
-        };
-
-        try {
-            const subjectRef = await addDoc(collection(db, "subjects"), subjectData);
-            subjects.push({ id: subjectRef.id, ...subjectData });
-            renderSubjects();
-            addForm.reset();
-            addModal.style.display = 'none';
-        } catch (err) {
-            console.error("Error adding subject:", err);
-            alert("Error adding subject: " + err.message);
+    function initAddSubjectForm() {
+        const form = document.getElementById('addSubjectForm');
+        const modal = document.getElementById('addSubjectModal');
+        
+        if (!form || !modal) {
+            console.log('Add Subject form or modal not found');
+            return;
         }
-    });
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            console.log('Add Subject form submitted');
+            
+            const name = document.getElementById('newSubjectName')?.value?.trim();
+            const teacher = document.getElementById('newTeacherName')?.value?.trim();
+            const time = document.getElementById('newSubjectTime')?.value?.trim();
+            const description = document.getElementById('newSubjectDescription')?.value?.trim();
+            
+            if (!name || !teacher || !time) {
+                alert('Please fill in all required fields');
+                return;
+            }
+            
+            if (!userData?.id) {
+                alert('User not logged in. Please log in first.');
+                return;
+            }
+            
+            const subjectData = {
+                name: name,
+                teacher: teacher,
+                time: time,
+                description: description,
+                instructorId: userData.id,
+                instructorName: userData.name,
+                createdAt: serverTimestamp()
+            };
+            
+            console.log('Saving subject:', subjectData);
+            
+            try {
+                const subjectRef = await addDoc(collection(db, "subjects"), subjectData);
+                console.log('Subject saved with ID:', subjectRef.id);
+                
+                subjects.push({ id: subjectRef.id, ...subjectData });
+                renderSubjects();
+                form.reset();
+                modal.style.display = 'none';
+                
+                alert('Subject added successfully!');
+            } catch (err) {
+                console.error('Error adding subject:', err);
+                alert('Error adding subject: ' + err.message);
+            }
+        });
+    }
+    
+    // Initialize form when DOM is ready
+    initAddSubjectForm();
 
     // Initial Render
     renderSubjects();
