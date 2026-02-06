@@ -59,15 +59,16 @@
 
             <div class="form-group">
               <label for="password"><i class="fas fa-lock"></i> Password</label>
-              <div class="input-wrapper password-wrapper">
+              <div class="input-wrapper">
                 <input
                   type="password"
                   id="password"
                   placeholder="Enter your password"
                   required
                 />
+                <span class="input-icon"><i class="fas fa-lock"></i></span>
                 <span class="toggle-password" id="togglePassword">
-                  <i class="fas fa-eye"></i>
+                  <i class="fas fa-eye-slash"></i>
                 </span>
               </div>
             </div>
@@ -185,11 +186,7 @@
       }
       
       .input-wrapper input {
-        padding-left: 15px !important;
-        padding-right: 40px !important;
-      }
-      
-      .password-wrapper input {
+        padding-left: 45px !important;
         padding-right: 45px !important;
       }
       
@@ -422,22 +419,6 @@
           document.body.classList.add("light-mode");
         }
       })();
-      
-      // Theme toggle buttons
-      document.addEventListener('DOMContentLoaded', function() {
-        const darkModeBtn = document.getElementById('darkModeBtn');
-        const lightModeBtn = document.getElementById('lightModeBtn');
-        
-        darkModeBtn?.addEventListener('click', function() {
-          localStorage.setItem('theme', 'dark');
-          document.body.classList.remove('light-mode');
-        });
-        
-        lightModeBtn?.addEventListener('click', function() {
-          localStorage.setItem('theme', 'light');
-          document.body.classList.add('light-mode');
-        });
-      });
     </script>
     
     <!-- Load Firebase and App Scripts -->
