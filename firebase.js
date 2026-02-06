@@ -7,13 +7,13 @@ import {
     addDoc, 
     getDocs, 
     query, 
-    orderBy, 
     where, 
     doc, 
     updateDoc, 
     deleteDoc, 
     getDoc,
-    serverTimestamp 
+    serverTimestamp,
+    onSnapshot
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 // Your Firebase config
@@ -51,5 +51,6 @@ export {
     updateDoc, 
     deleteDoc, 
     getDoc,
-    serverTimestamp 
+    serverTimestamp,
+    onSnapshot
 };
