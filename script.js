@@ -100,10 +100,10 @@ async function initializeSubjects() {
     const userData = JSON.parse(localStorage.getItem("userData"));
     const isInstructor = userData?.role === 'instructor';
 
-    // Show/hide add button based on role
-    if (addBtn) {
-        addBtn.style.display = isInstructor ? 'flex' : 'none';
-    }
+    // Show/hide add button based on role (optional - remove to allow all users)
+    // if (addBtn) {
+    //     addBtn.style.display = isInstructor ? 'flex' : 'none';
+    // }
 
     let subjects = [];
     let currentSubjectIndex = null;
