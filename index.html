@@ -74,7 +74,7 @@
         <div
           class="school-banner"
           style="
-            background-image: url(&quot;Classroom\ Header-4\ -\ Made\ with\ PosterMyWall.jpg&quot;);
+            background-image: url("Classroom Header-4 - Made with PosterMyWall.jpg");
           "
         >
           <div class="school-logo-container">
@@ -94,6 +94,7 @@
             <p>
               <span class="greetingMessage"></span>
             </p>
+            <p id="userRoleDisplay" style="font-size: 0.9em; opacity: 0.8;"></p>
           </div>
         </section>
 
@@ -134,9 +135,13 @@
             <h2><i class="fas fa-bolt"></i> Quick Actions</h2>
           </div>
           <div class="quick-actions-grid">
-            <button class="action-card">
+            <button class="action-card student-only">
               <i class="fas fa-file-upload"></i>
               <span>Submit Assignment</span>
+            </button>
+            <button class="action-card instructor-only">
+              <i class="fas fa-plus-circle"></i>
+              <span>Create Assignment</span>
             </button>
             <button class="action-card">
               <i class="fas fa-message"></i>
@@ -146,9 +151,13 @@
               <i class="fas fa-download"></i>
               <span>Download Materials</span>
             </button>
-            <button class="action-card">
-              <i class="fas fa-eye"></i>
-              <span>View Results</span>
+            <button class="action-card instructor-only">
+              <i class="fas fa-chart-line"></i>
+              <span>View All Submissions</span>
+            </button>
+            <button class="action-card student-only">
+              <i class="fas fa-file-alt"></i>
+              <span>My Submissions</span>
             </button>
           </div>
         </section>
@@ -160,7 +169,7 @@
     <script src="https://unpkg.com/scrollreveal"></script>
     <script src="https://unpkg.com/typed.js@3.0.0/dist/typed.umd.js"></script>
     <script type="module">
-      import { logout } from "./script.js"; // Make sure logout function is exported
+      import { logout } from "./script.js";
 
       // Logout button
       const logoutBtn = document.getElementById("logoutBtn");
