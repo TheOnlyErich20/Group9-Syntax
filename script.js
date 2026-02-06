@@ -1,668 +1,517 @@
 // =========================
+// IMPORT FIREBASE AUTH
+// =========================
+import { auth } from './firebase.js';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+const db = getFirestore();
+
+// =========================
+// THEME TOGGLE
+// =========================
+function initializeTheme() {
+    const theme = localStorage.getItem("theme") || "dark";
+    applyTheme(theme);
+}
+
+function applyTheme(theme) {
+    if (theme === "light") document.body.classList.add("light-mode");
+    else document.body.classList.remove("light-mode");
+    localStorage.setItem("theme", theme);
+
+    const darkBtn = document.getElementById("darkModeBtn") || document.getElementById("darkThemeBtn");
+    const lightBtn = document.getElementById("lightModeBtn") || document.getElementById("lightThemeBtn");
+
+    // Remove active from all
+    [document.getElementById("darkModeBtn"), document.getElementById("lightModeBtn"), 
+     document.getElementById("darkThemeBtn"), document.getElementById("lightThemeBtn")].forEach(btn => {
+        if (btn) btn.classList.remove("active");
+    });
+
+    // Add active to the correct button
+    if (theme === "dark") {
+        document.getElementById("darkModeBtn")?.classList.add("active");
+        document.getElementById("darkThemeBtn")?.classList.add("active");
+    } else {
+        document.getElementById("lightModeBtn")?.classList.add("active");
+        document.getElementById("lightThemeBtn")?.classList.add("active");
+    }
+}
+
+// =========================
+// LOGIN / SIGNUP MESSAGES
+// =========================
+function setMessage(id, msg, success = false) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = msg;
+    el.style.display = "block";
+    el.style.color = success ? "#51cf66" : "#ff6b6b";
+}
+
+// =========================
+// LOGIN FUNCTIONALITY
+// =========================
+function initializeLogin() {
+    const loginForm = document.getElementById("loginForm");
+    loginForm?.addEventListener("submit", async e => {
+        e.preventDefault();
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value.trim();
+
+        if (!email || !password) {
+            setMessage("loginError", "Please fill in all fields");
+            return;
+        }
+
+        try {
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+
+            // Store logged-in user in localStorage
+            localStorage.setItem("isLoggedIn", "true");
+            localStorage.setItem("userData", JSON.stringify({ id: user.uid, name: user.displayName || email }));
+
+            setMessage("loginSuccess", "Login successful! Redirecting...", true);
+            setTimeout(() => location.href = "index.html", 1200);
+        } catch (err) {
+            setMessage("loginError", err.message);
+        }
+    });
+}
+
+// =========================
+// SIGNUP FUNCTIONALITY
+// =========================
+function initializeSignup() {
+    const signupForm = document.getElementById("signupForm");
+
+    signupForm?.addEventListener("submit", async e => {
+        e.preventDefault();
+
+        const fullName = document.getElementById("fullName").value.trim();
+        const email = document.getElementById("signupEmail").value.trim();
+        const password = document.getElementById("signupPassword").value;
+        const confirmPassword = document.getElementById("confirmPassword").value;
+        const phone = document.getElementById("phone").value.trim();
+        const course = document.getElementById("course").value.trim();
+
+        if (!fullName || !email || !password || !confirmPassword || !course) {
+            setMessage("signupMessage", "Please fill in all required fields");
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            setMessage("signupMessage", "Passwords do not match");
+            return;
+        }
+
+        if (password.length < 6) {
+            setMessage("signupMessage", "Password must be at least 6 characters");
+            return;
+        }
+
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+
+            await updateProfile(user, { displayName: fullName });
+
+            await setDoc(doc(db, "students", user.uid), {
+                fullName,
+                email,
+                phone,
+                course,
+                role: "student",
+                createdAt: serverTimestamp()
+            });
+
+            setMessage("signupMessage", "Account created successfully! Redirecting...", true);
+            setTimeout(() => window.location.href = "Login.html", 1500);
+
+        } catch (err) {
+            setMessage("signupMessage", err.message);
+        }
+    });
+}
+
+// =========================
+// PASSWORD TOGGLE
+// =========================
+function initializePasswordToggles() {
+    function togglePassword(inputId, iconId) {
+        const input = document.getElementById(inputId);
+        const icon = document.querySelector(`#${iconId} i`);
+        if (!input || !icon) return;
+        input.type = input.type === "password" ? "text" : "password";
+        icon.classList.toggle("fa-eye-slash");
+        icon.classList.toggle("fa-eye");
+    }
+
+    document.getElementById("togglePassword")?.addEventListener("click", () => togglePassword("password", "togglePassword"));
+    document.getElementById("toggleSignupPassword")?.addEventListener("click", () => togglePassword("signupPassword", "toggleSignupPassword"));
+    document.getElementById("toggleConfirmPassword")?.addEventListener("click", () => togglePassword("confirmPassword", "toggleConfirmPassword"));
+}
+
+// =========================
+// DASHBOARD USER INFO
+// =========================
+function initializeDashboard() {
+    const userData = JSON.parse(localStorage.getItem("userData"));
+    if (!userData) return;
+
+    const userNameEl = document.getElementById("headerUserName");
+    const dashboardNameEl = document.getElementById("dashboardUserName");
+    const greetingEl = document.getElementById("greetingMessage");
+
+    if (userNameEl) userNameEl.textContent = userData.name;
+    if (dashboardNameEl) dashboardNameEl.textContent = userData.name.split(" ")[0];
+
+    if (greetingEl) {
+        const hour = new Date().getHours();
+        greetingEl.textContent = hour < 12 ? "Good morning 🌅" :
+                                 hour < 17 ? "Good afternoon ☀️" :
+                                             "Good evening 🌙";
+    }
+}
+
+// =========================
+// LOGOUT
+// =========================
+function logout(e) {
+    if (e) e.preventDefault();
+    localStorage.clear();
+    location.href = "Login.html";
+}
+
+// =========================
+// HELP PAGE FUNCTIONALITY
+// =========================
+function initializeHelp() {
+    const faqItems = document.querySelectorAll('.faq-item');
+    
+    faqItems.forEach(item => {
+        const question = item.querySelector('.faq-question');
+        if (!question) return;
+
+        question.addEventListener('click', () => {
+            const isActive = item.classList.contains('active');
+            
+            // Close all other items
+            faqItems.forEach(otherItem => {
+                otherItem.classList.remove('active');
+            });
+
+            // Toggle current item
+            if (!isActive) {
+                item.classList.add('active');
+            }
+        });
+    });
+
+    // Contact Form Handling (Visual only)
+    const contactForm = document.getElementById('helpContactForm');
+    contactForm?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const btn = contactForm.querySelector('.btn-submit');
+        const originalText = btn.textContent;
+        btn.textContent = 'Message Sent!';
+        btn.style.background = '#4ade80';
+        setTimeout(() => { btn.textContent = originalText; btn.style.background = ''; contactForm.reset(); }, 3000);
+    });
+}
+
+// =========================
 // SUBJECTS PAGE FUNCTIONALITY
 // =========================
-// Import Firebase functions
-import { db } from './firebase.js';
-import { 
-    collection, 
-    addDoc, 
-    getDocs, 
-    updateDoc, 
-    deleteDoc, 
-    doc, 
-    serverTimestamp 
-} from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
-
-// Wait for DOM to be ready
-document.addEventListener('DOMContentLoaded', async function() {
+function initializeSubjects() {
     const listContainer = document.getElementById('subjectsList');
     const detailsContainer = document.getElementById('subjectDetailsPanel');
     const addBtn = document.getElementById('addSubjectBtn');
     const addModal = document.getElementById('addSubjectModal');
     const addForm = document.getElementById('addSubjectForm');
-    const subjectsGrid = document.getElementById('subjectsGrid');
 
-    // Get current user role
-    const userData = JSON.parse(localStorage.getItem("userData"));
-    const isInstructor = userData?.role === 'instructor';
+    if (!listContainer || !detailsContainer) return;
 
-    // Show/hide add button based on role
-    if (addBtn) {
-        addBtn.style.display = isInstructor ? 'flex' : 'none';
-    }
+    // Dummy data for demonstration
+    let subjects = [
+        { name: "Mathematics", teacher: "Mr. Anderson", time: "08:00 AM - 09:30 AM", description: "Advanced Calculus and Algebra" },
+        { name: "Physics", teacher: "Ms. Curie", time: "10:00 AM - 11:30 AM", description: "Fundamentals of Physics" },
+        { name: "Computer Science", teacher: "Mr. Turing", time: "01:00 PM - 02:30 PM", description: "Algorithms and Data Structures" }
+    ];
 
-    let subjects = [];
-    let tasks = [];
+    // Dummy lessons data
+    const dummyLessons = [
+        { title: "Introduction to the Course", duration: "45 mins", status: "Completed" },
+        { title: "Chapter 1: Fundamentals", duration: "1 hr 20 mins", status: "In Progress" },
+        { title: "Chapter 2: Advanced Concepts", duration: "55 mins", status: "Locked" },
+        { title: "Midterm Review", duration: "2 hrs", status: "Locked" }
+    ];
 
-    // =========================
-    // LOAD SUBJECTS FROM FIRESTORE
-    // =========================
-    async function loadSubjects() {
-        if (!subjectsGrid) {
-            // Fallback to list view if subjectsGrid doesn't exist
-            if (!listContainer || !detailsContainer) return;
-            return loadSubjectsListView();
-        }
-
-        try {
-            const subjectsQuery = await getDocs(collection(db, "subjects"));
-            subjectsQuery.forEach(doc => {
-                const data = doc.data();
-                subjects.push({ id: doc.id, ...data });
-            });
-
-            // Load tasks
-            const tasksQuery = await getDocs(collection(db, "tasks"));
-            tasksQuery.forEach(doc => {
-                tasks.push({ id: doc.id, ...doc.data() });
-            });
-
-            renderSubjectsGrid();
-        } catch (err) {
-            console.error("Error loading data:", err);
-            renderErrorState();
-        }
-    }
-
-    // =========================
-    // RENDER SUBJECTS (GRID VIEW)
-    // =========================
-    function renderSubjectsGrid() {
-        if (!subjectsGrid) return;
-
-        subjectsGrid.innerHTML = '';
-
-        if (subjects.length === 0) {
-            subjectsGrid.innerHTML = `
-                <div class="empty-state" style="text-align: center; padding: 40px; color: #aaa; grid-column: 1 / -1;">
-                    <i class="fas fa-book-open" style="font-size: 48px; margin-bottom: 20px;"></i>
-                    <p style="font-size: 18px;">No subjects available yet.</p>
-                    ${isInstructor ? '<button class="btn-primary" onclick="addSubject()" style="margin-top: 20px;"><i class="fas fa-plus"></i> Add Your First Subject</button>' : ''}
-                </div>
-            `;
-            return;
-        }
-
-        subjects.forEach(sub => {
-            const subjectTasks = tasks.filter(t => t.subjectId === sub.id);
-            const card = document.createElement('div');
-            card.className = 'subject-card';
-            card.innerHTML = `
-                <div class="subject-info">
-                    <h3><i class="fas fa-book"></i> ${escapeHtml(sub.name)}</h3>
-                    <p class="teacher"><i class="fas fa-chalkboard-teacher"></i> ${escapeHtml(sub.teacher || 'TBA')}</p>
-                    <p class="time"><i class="fas fa-clock"></i> ${escapeHtml(sub.time || 'TBA')}</p>
-                    ${sub.description ? `<p class="description"><i class="fas fa-info-circle"></i> ${escapeHtml(sub.description)}</p>` : ''}
-                </div>
-                <div class="subject-actions">
-                    <button class="btn-view" onclick="viewSubject('${sub.id}')">
-                        <i class="fas fa-eye"></i> View
-                    </button>
-                    ${isInstructor ? `
-                        <button class="btn-add-task" onclick="openTaskModal('${sub.id}', '${escapeHtml(sub.name)}')">
-                            <i class="fas fa-plus"></i> Add Task
-                        </button>
-                        <button class="btn-upload" onclick="openFileUploadModal('${sub.id}', '', 'subject')">
-                            <i class="fas fa-cloud-upload-alt"></i> Upload
-                        </button>
-                    ` : ''}
-                </div>
-                <div class="tasks-section" id="tasks-${sub.id}">
-                    <!-- Tasks will be loaded here -->
-                </div>
-            `;
-            subjectsGrid.appendChild(card);
-
-            // Load tasks for this subject
-            loadTasks(sub.id, sub.name);
-        });
-    }
-
-    // =========================
-    // LOAD TASKS FOR SUBJECT
-    // =========================
-    async function loadTasks(subjectId, subjectName) {
-        const tasksSection = document.getElementById(`tasks-${subjectId}`);
-        if (!tasksSection) return;
-
-        const subjectTasks = tasks.filter(t => t.subjectId === subjectId);
-
-        if (subjectTasks.length === 0) return;
-
-        const tasksList = document.createElement('div');
-        tasksList.className = 'tasks-list';
-        tasksList.innerHTML = '<h4><i class="fas fa-tasks"></i> Tasks</h4>';
-
-        subjectTasks.forEach(task => {
-            const dueDate = task.dueDate?.toDate ? task.dueDate.toDate() : new Date(task.dueDate);
-            const now = new Date();
-            const isOverdue = dueDate < now;
-            const priorityClass = task.priority === 'high' ? 'priority-high' : task.priority === 'medium' ? 'priority-medium' : 'priority-low';
-
-            const taskItem = document.createElement('div');
-            taskItem.className = `task-item ${isOverdue ? 'overdue' : ''}`;
-            taskItem.innerHTML = `
-                <div class="task-header">
-                    <span class="task-title">${escapeHtml(task.title)}</span>
-                    <span class="task-priority ${priorityClass}">${capitalizeFirst(task.priority)}</span>
-                </div>
-                ${task.description ? `<p class="task-description">${escapeHtml(task.description)}</p>` : ''}
-                <div class="task-meta">
-                    <span class="due-date ${isOverdue ? 'overdue' : ''}">
-                        <i class="fas fa-calendar"></i> Due: ${dueDate.toLocaleDateString()} ${dueDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                    </span>
-                </div>
-                <div class="task-actions">
-                    ${!isInstructor ? `
-                        <button class="btn-submit" onclick="openSubmissionModal('${task.id}', '${subjectId}')">
-                            <i class="fas fa-paper-plane"></i> Submit
-                        </button>
-                    ` : `
-                        <button class="btn-upload" onclick="openFileUploadModal('${subjectId}', '${task.id}', 'task')">
-                            <i class="fas fa-cloud-upload-alt"></i> Upload Material
-                        </button>
-                    `}
-                </div>
-            `;
-            tasksList.appendChild(taskItem);
-        });
-
-        tasksSection.appendChild(tasksList);
-    }
-
-    // =========================
-    // FALLBACK: LIST VIEW (if subjectsGrid doesn't exist)
-    // =========================
-    async function loadSubjectsListView() {
-        if (!listContainer || !detailsContainer) return;
-
-        try {
-            const subjectsQuery = await getDocs(collection(db, "subjects"));
-            subjectsQuery.forEach(doc => {
-                const data = doc.data();
-                subjects.push({ id: doc.id, ...data });
-            });
-
-            const tasksQuery = await getDocs(collection(db, "tasks"));
-            tasksQuery.forEach(doc => {
-                tasks.push({ id: doc.id, ...doc.data() });
-            });
-
-            renderSubjects();
-        } catch (err) {
-            console.error("Error loading data:", err);
-            // Fallback data
-            subjects = [
-                { id: "demo1", name: "Mathematics", teacher: "Mr. Anderson", time: "08:00 AM - 09:30 AM", description: "Advanced Calculus" },
-                { id: "demo2", name: "Physics", teacher: "Ms. Curie", time: "10:00 AM - 11:30 AM", description: "Fundamentals of Physics" }
-            ];
-            tasks = [
-                { id: "t1", title: "Assignment 1", description: "Chapter 1 exercises", dueDate: new Date(Date.now() + 86400000), maxScore: 100, subjectId: "demo1" },
-                { id: "t2", title: "Quiz 1", description: "Quick quiz", dueDate: new Date(Date.now() + 172800000), maxScore: 50, subjectId: "demo1" }
-            ];
-            renderSubjects();
-        }
-    }
-
+    // -------------------------
+    // RENDER SUBJECTS
+    // -------------------------
     function renderSubjects() {
-        if (subjects.length === 0) {
-            listContainer.innerHTML = `
-                <div class="empty-state" style="text-align: center; padding: 20px; color: #aaa;">
-                    <i class="fas fa-book"></i>
-                    <p>${isInstructor ? 'No subjects yet. Click + to add one.' : 'No subjects available.'}</p>
-                </div>
-            `;
-            return;
-        }
-
         listContainer.innerHTML = subjects.map((sub, index) => `
-            <div class="subject-list-item" data-index="${index}" data-id="${sub.id}">
+            <div class="subject-list-item" data-index="${index}">
                 <h4>${sub.name}</h4>
-                <p><i class="fas fa-chalkboard-teacher"></i> ${sub.teacher || 'TBA'}</p>
+                <p><i class="fas fa-chalkboard-teacher"></i> ${sub.teacher}</p>
             </div>
         `).join('');
 
+        // Add click listeners
         document.querySelectorAll('.subject-list-item').forEach(item => {
             item.addEventListener('click', () => {
+                // Remove active class from all
                 document.querySelectorAll('.subject-list-item').forEach(i => i.classList.remove('active'));
+                // Add active to clicked
                 item.classList.add('active');
+                // Show details
                 renderSubjectDetails(item.dataset.index);
             });
         });
     }
 
+    // -------------------------
+    // RENDER DETAILS
+    // -------------------------
     function renderSubjectDetails(index) {
         const sub = subjects[index];
         if (!sub) return;
 
-        const subjectTasks = tasks.filter(t => t.subjectId === sub.id);
-
-        if (isInstructor) {
-            detailsContainer.innerHTML = `
-                <div class="detail-header">
-                    <h2>${sub.name}</h2>
-                    <div class="detail-meta">
-                        <span><i class="fas fa-chalkboard-teacher"></i> ${sub.teacher || 'TBA'}</span>
-                        <span><i class="fas fa-clock"></i> ${sub.time || 'TBA'}</span>
-                    </div>
-                    <p class="detail-description">${sub.description || 'No description available.'}</p>
+        detailsContainer.innerHTML = `
+            <div class="detail-header">
+                <h2>${sub.name}</h2>
+                <div class="detail-meta">
+                    <span><i class="fas fa-chalkboard-teacher"></i> ${sub.teacher}</span>
+                    <span><i class="fas fa-clock"></i> ${sub.time}</span>
                 </div>
+                <p class="detail-description">${sub.description || "No description available."}</p>
+            </div>
 
-                <div class="tasks-section" style="margin-top: 20px;">
-                    <h3 style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
-                        <i class="fas fa-tasks"></i> Tasks & Assignments
-                        <button onclick="openTaskModal('${sub.id}')" class="btn-add-mini" title="Add Task">
-                            <i class="fas fa-plus"></i>
-                        </button>
-                    </h3>
-                    <div class="tasks-list" id="tasksList">
-                        ${subjectTasks.length > 0 ? subjectTasks.map(task => `
-                            <div class="task-item" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 10px;">
-                                <div>
-                                    <h4 style="margin: 0 0 5px;">${task.title}</h4>
-                                    <p style="font-size: 12px; color: #aaa; margin: 0;">
-                                        <i class="fas fa-clock"></i> Due: ${new Date(task.dueDate).toLocaleDateString()}
-                                        <span style="margin-left: 10px;"><i class="fas fa-star"></i> ${task.maxScore} pts</span>
-                                    </p>
-                                </div>
-                                <div class="task-actions" style="display: flex; gap: 8px;">
-                                    <button onclick="openTaskModal('${sub.id}', '${task.id}')" class="btn-action" title="Edit" style="background: rgba(59, 130, 246, 0.2); border: none; padding: 8px 12px; border-radius: 6px; color: #60a5fa; cursor: pointer;">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button onclick="deleteTask('${sub.id}', '${task.id}')" class="btn-action" title="Delete" style="background: rgba(239, 68, 68, 0.2); border: none; padding: 8px 12px; border-radius: 6px; color: #f87171; cursor: pointer;">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        `).join('') : '<p style="color: #aaa;">No tasks yet. Click + to add one.</p>'}
-                    </div>
-                </div>
-
-                <div class="upload-section" style="margin-top: 25px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 10px;">
-                    <h3 style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
-                        <i class="fas fa-cloud-upload-alt"></i> Upload Materials
-                    </h3>
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <button onclick="openUploadModal('${sub.id}')" class="login-btn" style="width: auto; padding: 10px 20px;">
-                            <i class="fas fa-file-upload"></i> Upload File
+            <div class="lessons-container">
+                <h3><i class="fas fa-list-ul"></i> Lessons</h3>
+                ${dummyLessons.map(lesson => `
+                    <div class="lesson-item">
+                        <div class="lesson-info">
+                            <h4>${lesson.title}</h4>
+                            <p><i class="fas fa-clock"></i> ${lesson.duration} • ${lesson.status}</p>
+                        </div>
+                        <button class="btn-start-lesson">
+                            ${lesson.status === 'Locked' ? '<i class="fas fa-lock"></i>' : '<i class="fas fa-play"></i> Start'}
                         </button>
                     </div>
-                    <p style="font-size: 12px; color: #aaa; margin-top: 10px;">
-                        Supported: PDF, DOC, DOCX, PPT, PPTX, Images, Videos (Max 50MB)
-                    </p>
-                </div>
-            `;
-        } else {
-            detailsContainer.innerHTML = `
-                <div class="detail-header">
-                    <h2>${sub.name}</h2>
-                    <div class="detail-meta">
-                        <span><i class="fas fa-chalkboard-teacher"></i> ${sub.teacher || 'TBA'}</span>
-                        <span><i class="fas fa-clock"></i> ${sub.time || 'TBA'}</span>
-                    </div>
-                    <p class="detail-description">${sub.description || 'No description available.'}</p>
-                </div>
-
-                <div class="lessons-section" style="margin-top: 20px;">
-                    <h3 style="margin-bottom: 15px;"><i class="fas fa-list-ul"></i> Lessons</h3>
-                    <div class="lessons-list">
-                        ${[
-                            { title: "Introduction", duration: "45 mins", status: "Completed" },
-                            { title: "Chapter 1", duration: "1 hr 20 mins", status: "In Progress" },
-                            { title: "Chapter 2", duration: "55 mins", status: "Locked" }
-                        ].map(lesson => `
-                            <div class="lesson-item" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 10px;">
-                                <div>
-                                    <h4 style="margin: 0 0 5px;">${lesson.title}</h4>
-                                    <p style="font-size: 12px; color: #aaa; margin: 0;">
-                                        <i class="fas fa-clock"></i> ${lesson.duration} • ${lesson.status}
-                                    </p>
-                                </div>
-                                <button class="btn-start-lesson" style="background: ${lesson.status === 'Locked' ? 'rgba(255,255,255,0.1)' : 'var(--accent)'}; border: none; padding: 8px 16px; border-radius: 6px; color: #fff; cursor: ${lesson.status === 'Locked' ? 'not-allowed' : 'pointer'};">
-                                    ${lesson.status === 'Locked' ? '<i class="fas fa-lock"></i>' : '<i class="fas fa-play"></i> Start'}
-                                </button>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-
-                <div class="assignments-section" style="margin-top: 25px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 10px;">
-                    <h3 style="margin-bottom: 15px;"><i class="fas fa-tasks"></i> Your Assignments</h3>
-                    <div class="assignments-list">
-                        ${subjectTasks.length > 0 ? subjectTasks.map(task => `
-                            <div class="assignment-item" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 10px;">
-                                <div>
-                                    <h4 style="margin: 0 0 5px;">${task.title}</h4>
-                                    <p style="font-size: 12px; color: #aaa; margin: 0;">
-                                        <i class="fas fa-clock"></i> Due: ${new Date(task.dueDate).toLocaleDateString()}
-                                        <span style="margin-left: 10px;"><i class="fas fa-star"></i> ${task.maxScore} pts</span>
-                                    </p>
-                                </div>
-                                <button onclick="openSubmissionModal('${task.id}', '${sub.id}')" class="login-btn" style="width: auto; padding: 8px 16px; background: #4ade80;">
-                                    <i class="fas fa-paper-plane"></i> Submit
-                                </button>
-                            </div>
-                        `).join('') : '<p style="color: #aaa;">No assignments available.</p>'}
-                    </div>
-                </div>
-            `;
-        }
+                `).join('')}
+            </div>
+        `;
     }
 
-    // =========================
-    // TASK MANAGEMENT
-    // =========================
-    const taskForm = document.getElementById('addTaskForm');
-    if (taskForm) {
-        taskForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const taskId = document.getElementById('editTaskId')?.value;
-            const taskData = {
-                title: document.getElementById('taskTitle')?.value,
-                description: document.getElementById('taskDescription')?.value,
-                dueDate: new Date(document.getElementById('taskDueDate')?.value),
-                maxScore: parseInt(document.getElementById('taskMaxScore')?.value) || 100,
-                subjectId: document.getElementById('currentSubjectId')?.value || ''
-            };
+    // -------------------------
+    // OPEN ADD MODAL
+    // -------------------------
+    addBtn?.addEventListener('click', () => {
+        addModal.style.display = 'block';
+    });
 
-            if (!taskData.title || !taskData.dueDate || !taskData.subjectId) {
-                alert('Please fill in all required fields');
-                return;
-            }
-
-            try {
-                if (taskId) {
-                    await updateDoc(doc(db, "tasks", taskId), taskData);
-                    const idx = tasks.findIndex(t => t.id === taskId);
-                    if (idx !== -1) tasks[idx] = { ...tasks[idx], ...taskData };
-                } else {
-                    const taskRef = await addDoc(collection(db, "tasks"), {
-                        ...taskData,
-                        instructorId: userData.id,
-                        createdAt: serverTimestamp()
-                    });
-                    tasks.push({ id: taskRef.id, ...taskData, status: "open" });
-                }
-
-                closeTaskModal();
-                location.reload();
-            } catch (err) {
-                console.error("Error saving task:", err);
-                alert("Error saving task: " + err.message);
-            }
+    // -------------------------
+    // CLOSE MODALS
+    // -------------------------
+    document.querySelectorAll('.modal .close').forEach(btn => {
+        btn.addEventListener('click', () => {
+            btn.closest('.modal').style.display = 'none';
         });
+    });
+
+    window.addEventListener('click', e => {
+        if (e.target === addModal) addModal.style.display = 'none';
+    });
+
+    // -------------------------
+    // ADD SUBJECT (FORM)
+    // -------------------------
+    addForm?.addEventListener('submit', e => {
+        e.preventDefault();
+
+        const subject = {
+            name: document.getElementById('newSubjectName').value.trim(),
+            teacher: document.getElementById('newTeacherName').value.trim(),
+            time: document.getElementById('newSubjectTime').value.trim(),
+            description: document.getElementById('newSubjectDescription').value.trim()
+        };
+
+        subjects.push(subject);
+        renderSubjects();
+
+        addForm.reset();
+        addModal.style.display = 'none';
+    });
+
+    // Initial Render
+    renderSubjects();
+}
+
+// =========================
+// PROFILE PAGE FUNCTIONALITY
+// =========================
+function initializeProfile() {
+    const editBtn = document.getElementById('editProfileBtn');
+    const modal = document.getElementById('editProfileModal');
+    const closeBtn = document.getElementById('closeModalBtn');
+    const cancelBtn = document.getElementById('cancelModalBtn');
+    const editForm = document.getElementById('editForm');
+
+    if (!editBtn || !modal || !editForm) return;
+
+    // Load saved profile data
+    const savedProfile = localStorage.getItem('userProfile');
+    if (savedProfile) {
+        const data = JSON.parse(savedProfile);
+        updateProfileUI(data);
     }
 
-    // =========================
-    // DELETE TASK
-    // =========================
-    window.deleteTask = async function(subjectId, taskId) {
-        if (!confirm("Are you sure you want to delete this task?")) return;
-
-        try {
-            await deleteDoc(doc(db, "tasks", taskId));
-            tasks = tasks.filter(t => t.id !== taskId);
-            location.reload();
-        } catch (err) {
-            console.error("Error deleting task:", err);
-            alert("Error deleting task: " + err.message);
-        }
-    };
-
-    // =========================
-    // FILE UPLOAD
-    // =========================
-    const uploadForm = document.getElementById('fileUploadForm');
-    if (uploadForm) {
-        uploadForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const fileInput = document.getElementById('fileToUpload');
-            const file = fileInput.files[0];
-            if (!file) {
-                alert("Please select a file");
-                return;
-            }
-
-            if (file.size > 50 * 1024 * 1024) {
-                alert("File size must be less than 50MB");
-                return;
-            }
-
-            const subjectId = document.getElementById('uploadSubjectId')?.value;
-            const taskId = document.getElementById('uploadTaskId')?.value;
-            const uploadType = document.getElementById('uploadType')?.value;
-            const fileDescription = document.getElementById('fileDescription')?.value;
-
-            try {
-                await addDoc(collection(db, "files"), {
-                    fileName: file.name,
-                    fileType: file.type,
-                    fileSize: file.size,
-                    description: fileDescription,
-                    subjectId: subjectId,
-                    taskId: taskId || null,
-                    uploadType: uploadType,
-                    uploadedBy: userData.name,
-                    uploadedById: userData.id,
-                    uploadedAt: serverTimestamp()
-                });
-
-                alert("File uploaded successfully!");
-                closeFileUploadModal();
-                uploadForm.reset();
-                location.reload();
-            } catch (err) {
-                console.error("Error saving file:", err);
-                alert("Error saving file: " + err.message);
-            }
-        });
-    }
-
-    // =========================
-    // SUBMISSION
-    // =========================
-    const submissionForm = document.getElementById('submissionForm');
-    if (submissionForm) {
-        submissionForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const submissionText = document.getElementById('submissionText')?.value.trim();
-            const fileInput = document.getElementById('submissionFile');
-            const taskId = document.getElementById('submitTaskId')?.value;
-            const subjectId = document.getElementById('submitSubjectId')?.value;
-
-            if (!submissionText && fileInput.files.length === 0) {
-                alert('Please provide a text answer or attach a file');
-                return;
-            }
-
-            const submissionData = {
-                taskId: taskId,
-                subjectId: subjectId,
-                studentId: userData.id,
-                studentName: userData.name,
-                answer: submissionText,
-                submittedAt: serverTimestamp(),
-                status: "submitted"
-            };
-
-            try {
-                await addDoc(collection(db, "submissions"), submissionData);
-                alert("Assignment submitted successfully!");
-                closeSubmissionModal();
-                submissionForm.reset();
-                location.reload();
-            } catch (err) {
-                console.error("Error submitting:", err);
-                alert("Error submitting: " + err.message);
-            }
-        });
-    }
-
-    // =========================
-    // GLOBAL MODAL FUNCTIONS (must be global for onclick handlers)
-    // =========================
-    window.openTaskModal = function(subjectId, subjectName) {
-        document.getElementById('currentSubjectId').value = subjectId;
-        document.getElementById('currentSubjectName').value = subjectName;
-        document.getElementById('addTaskModal').style.display = 'block';
-    };
-
-    window.closeTaskModal = function() {
-        document.getElementById('addTaskModal').style.display = 'none';
-    };
-
-    window.openFileUploadModal = function(subjectId, taskId = '', type = 'subject') {
-        document.getElementById('uploadSubjectId').value = subjectId;
-        document.getElementById('uploadTaskId').value = taskId;
-        document.getElementById('uploadType').value = type;
-        document.getElementById('fileUploadModal').style.display = 'block';
-    };
-
-    window.closeFileUploadModal = function() {
-        document.getElementById('fileUploadModal').style.display = 'none';
-    };
-
-    window.openSubmissionModal = function(taskId, subjectId) {
-        document.getElementById('submitTaskId').value = taskId;
-        document.getElementById('submitSubjectId').value = subjectId;
-        document.getElementById('submissionModal').style.display = 'block';
-    };
-
-    window.closeSubmissionModal = function() {
-        document.getElementById('submissionModal').style.display = 'none';
-    };
-
-    window.closeModal = function(modalId) {
-        document.getElementById(modalId).style.display = 'none';
-    };
-
-    window.addSubject = function() {
-        document.getElementById('addSubjectModal').style.display = 'block';
-    };
-
-    window.viewSubject = function(subjectId) {
-        window.location.href = `Subjects.html?id=${subjectId}`;
-    };
-
-    // =========================
-    // ADD SUBJECT BUTTON HANDLER
-    // =========================
-    function initAddSubjectBtn() {
-        const btn = document.getElementById('addSubjectBtn');
-        const modal = document.getElementById('addSubjectModal');
+    // Open Modal
+    editBtn.addEventListener('click', () => {
+        // Populate form with current values
+        document.getElementById('editName').value = document.getElementById('fullName').textContent;
+        document.getElementById('editEmail').value = document.getElementById('infoEmail').textContent;
+        document.getElementById('editPhone').value = document.getElementById('infoPhone').textContent;
+        document.getElementById('editGender').value = document.getElementById('infoGender').textContent;
         
-        if (btn && modal) {
-            btn.addEventListener('click', () => {
-                modal.style.display = 'block';
+        // Handle Date (Convert "March 15, 2003" to "2003-03-15")
+        const dobText = document.getElementById('infoDOB').textContent;
+        const dateObj = new Date(dobText);
+        if (!isNaN(dateObj.getTime())) {
+             document.getElementById('editDOB').value = dateObj.toISOString().split('T')[0];
+        }
+        
+        modal.style.display = 'block';
+    });
+
+    // Close Modal
+    const closeModal = () => modal.style.display = 'none';
+    if(closeBtn) closeBtn.addEventListener('click', closeModal);
+    if(cancelBtn) cancelBtn.addEventListener('click', closeModal);
+    window.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+
+    // Save Changes
+    editForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const newData = {
+            fullName: document.getElementById('editName').value,
+            email: document.getElementById('editEmail').value,
+            phone: document.getElementById('editPhone').value,
+            dob: document.getElementById('editDOB').value,
+            gender: document.getElementById('editGender').value
+        };
+
+        // Format Date for display (YYYY-MM-DD to Month DD, YYYY)
+        const dateObj = new Date(newData.dob);
+        const options = { year: 'numeric', month: 'long', day: 'numeric' };
+        const displayDate = !isNaN(dateObj.getTime()) ? dateObj.toLocaleDateString('en-US', options) : newData.dob;
+        
+        const uiData = { ...newData, dob: displayDate };
+
+        updateProfileUI(uiData);
+        localStorage.setItem('userProfile', JSON.stringify(uiData));
+        
+        // Update main user data for dashboard greeting
+        const userData = JSON.parse(localStorage.getItem('userData')) || {};
+        userData.name = newData.fullName;
+        localStorage.setItem('userData', JSON.stringify(userData));
+
+        closeModal();
+    });
+}
+
+function updateProfileUI(data) {
+    if(data.fullName) {
+        document.getElementById('fullName').textContent = data.fullName;
+        const displayName = document.getElementById('displayName');
+        if(displayName) displayName.textContent = data.fullName;
+    }
+    if(data.email) {
+        document.getElementById('infoEmail').textContent = data.email;
+        const displayEmail = document.getElementById('displayEmail');
+        if(displayEmail) displayEmail.textContent = data.email;
+    }
+    if(data.phone) document.getElementById('infoPhone').textContent = data.phone;
+    if(data.dob) document.getElementById('infoDOB').textContent = data.dob;
+    if(data.gender) document.getElementById('infoGender').textContent = data.gender;
+}
+
+// =========================
+// GRADES PAGE FUNCTIONALITY
+// =========================
+function initializeGradesTable() {
+    const rows = document.querySelectorAll('.grades-table .table-row');
+    
+    rows.forEach(row => {
+        row.addEventListener('click', () => {
+            // Close other rows (accordion style)
+            rows.forEach(r => {
+                if (r !== row) r.classList.remove('active');
             });
-        }
-        
-        // Close modal when clicking outside
-        window.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.style.display = 'none';
+            row.classList.toggle('active');
+        });
+    });
+}
+
+function initializeGradesFilter() {
+    const controls = document.querySelector('.grades-controls');
+    if (!controls) return;
+
+    const table = document.querySelector('.grades-table');
+    if (!table) return;
+
+    const buttons = controls.querySelectorAll('button[data-term]');
+
+    buttons.forEach(button => {
+        button.addEventListener('click', () => {
+            // Update active button
+            buttons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+
+            const term = button.dataset.term;
+
+            // Remove all term-specific classes from the table
+            table.classList.remove('show-prelim', 'show-midterm', 'show-final');
+
+            // Add the specific class if not 'all'
+            if (term !== 'all') {
+                table.classList.add(`show-${term}`);
             }
         });
-        
-        // Close button handlers for all modals
-        document.querySelectorAll('.modal .close').forEach(btn => {
-            btn.addEventListener('click', () => {
-                btn.closest('.modal').style.display = 'none';
-            });
-        });
-    }
+    });
+}
 
-    // =========================
-    // ADD SUBJECT FORM
-    // =========================
-    function initAddSubjectForm() {
-        const form = document.getElementById('addSubjectForm');
-        const modal = document.getElementById('addSubjectModal');
-        
-        if (!form || !modal) {
-            console.log('Add Subject form or modal not found');
-            return;
-        }
-        
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            console.log('Add Subject form submitted');
-            
-            const name = document.getElementById('newSubjectName')?.value?.trim();
-            const teacher = document.getElementById('newTeacherName')?.value?.trim();
-            const time = document.getElementById('newSubjectTime')?.value?.trim();
-            const description = document.getElementById('newSubjectDescription')?.value?.trim();
-            
-            if (!name || !teacher || !time) {
-                alert('Please fill in all required fields');
-                return;
-            }
-            
-            const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-            if (!userData?.id) {
-                alert('User not logged in. Please log in first.');
-                return;
-            }
-            
-            const subjectData = {
-                name: name,
-                teacher: teacher,
-                time: time,
-                description: description,
-                instructorId: userData.id,
-                instructorName: userData.name,
-                createdAt: serverTimestamp()
-            };
-            
-            console.log('Saving subject:', subjectData);
-            
-            try {
-                const subjectRef = await addDoc(collection(db, 'subjects'), subjectData);
-                console.log('Subject saved with ID:', subjectRef.id);
-                
-                alert('Subject added successfully!');
-                form.reset();
-                modal.style.display = 'none';
-                location.reload();
-            } catch (err) {
-                console.error('Error adding subject:', err);
-                alert('Error adding subject: ' + err.message);
-            }
-        });
-    }
+// =========================
+// INITIALIZE EVERYTHING ON DOM
+// =========================
+document.addEventListener("DOMContentLoaded", () => {
+    initializeTheme();
+    initializeLogin();
+    initializeSignup();
+    initializePasswordToggles();
+    initializeDashboard();
+    initializeHelp();
+    initializeSubjects();
+    initializeProfile();
+    initializeGradesTable();
+    initializeGradesFilter();
 
-    // =========================
-    // HELPER FUNCTIONS
-    // =========================
-    function escapeHtml(text) {
-        if (!text) return '';
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    function capitalizeFirst(str) {
-        if (!str) return '';
-        return str.charAt(0).toUpperCase() + str.slice(1);
-    }
-
-    function renderErrorState() {
-        if (subjectsGrid) {
-            subjectsGrid.innerHTML = `
-                <div class="empty-state" style="text-align: center; padding: 40px; color: #f87171; grid-column: 1 / -1;">
-                    <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 20px;"></i>
-                    <p style="font-size: 18px;">Error loading subjects. Please try again.</p>
-                </div>
-            `;
-        }
-    }
-
-    // =========================
-    // INITIALIZE PAGE
-    // =========================
-    initAddSubjectBtn();
-    initAddSubjectForm();
-
-    // Load subjects (will use grid or list view depending on available elements)
-    await loadSubjects();
+    // THEME BUTTONS FOR MULTIPLE PAGES
+    document.getElementById("darkModeBtn")?.addEventListener("click", () => applyTheme("dark"));
+    document.getElementById("lightModeBtn")?.addEventListener("click", () => applyTheme("light"));
+    document.getElementById("darkThemeBtn")?.addEventListener("click", () => applyTheme("dark"));
+    document.getElementById("lightThemeBtn")?.addEventListener("click", () => applyTheme("light"));
+    document.getElementById("logoutBtn")?.addEventListener("click", logout);
 });
+
+// =========================
+// EXPORT LOGOUT & THEME
+// =========================
+export { logout, applyTheme };
