@@ -94,14 +94,8 @@
               <span>or continue with</span>
             </div>
             <div class="social-buttons">
-              <button class="social-btn google">
+              <button class="social-btn google" onclick="signInWithGoogle()">
                 <i class="fab fa-google"></i>
-              </button>
-              <button class="social-btn microsoft">
-                <i class="fab fa-microsoft"></i>
-              </button>
-              <button class="social-btn apple">
-                <i class="fab fa-apple"></i>
               </button>
             </div>
           </div>
@@ -416,6 +410,18 @@
       }
     </style>
 
+    <!-- Theme Script - Must load before other scripts -->
+    <script>
+      // Initialize theme immediately to prevent flash
+      (function() {
+        const theme = localStorage.getItem("theme") || "dark";
+        if (theme === "light") {
+          document.body.classList.add("light-mode");
+        }
+      })();
+    </script>
+    
+    <!-- Load Firebase and App Scripts -->
     <script type="module" src="script.js"></script>
   </body>
 </html>
