@@ -46,25 +46,31 @@
           <form class="login-form" id="loginForm">
             <div class="form-group">
               <label for="email"><i class="fas fa-envelope"></i> Email</label>
-              <input
-                type="email"
-                id="email"
-                placeholder="your.email@icct.edu.ph"
-                required
-              />
+              <div class="input-wrapper">
+                <input
+                  type="email"
+                  id="email"
+                  placeholder="your.email@icct.edu.ph"
+                  required
+                />
+                <span class="input-icon"><i class="fas fa-envelope"></i></span>
+              </div>
             </div>
 
             <div class="form-group">
               <label for="password"><i class="fas fa-lock"></i> Password</label>
-              <input
-                type="password"
-                id="password"
-                placeholder="Enter your password"
-                required
-              />
-              <span class="toggle-password" id="togglePassword">
-                <i class="fas fa-eye-slash"></i>
-              </span>
+              <div class="input-wrapper">
+                <input
+                  type="password"
+                  id="password"
+                  placeholder="Enter your password"
+                  required
+                />
+                <span class="input-icon"><i class="fas fa-lock"></i></span>
+                <span class="toggle-password" id="togglePassword">
+                  <i class="fas fa-eye-slash"></i>
+                </span>
+              </div>
             </div>
 
             <div class="remember-forgot">
@@ -173,6 +179,230 @@
     </section>
 
     <style>
+      .input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+      
+      .input-wrapper input {
+        padding-left: 45px !important;
+        padding-right: 45px !important;
+      }
+      
+      .input-icon {
+        position: absolute;
+        left: 15px;
+        color: #6b7280;
+        font-size: 14px;
+      }
+      
+      .toggle-password {
+        position: absolute;
+        right: 15px;
+        color: #6b7280;
+        cursor: pointer;
+        transition: color 0.3s;
+      }
+      
+      .toggle-password:hover {
+        color: #fff;
+      }
+      
+      .remember-me {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+        font-size: 14px;
+        color: #9ca3af;
+      }
+      
+      .remember-me input {
+        display: none;
+      }
+      
+      .checkmark {
+        width: 18px;
+        height: 18px;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+        position: relative;
+        transition: all 0.3s;
+      }
+      
+      .remember-me input:checked + .checkmark {
+        background: #4ade80;
+        border-color: #4ade80;
+      }
+      
+      .remember-me input:checked + .checkmark::after {
+        content: '✓';
+        position: absolute;
+        color: #000;
+        font-size: 12px;
+        font-weight: bold;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+      
+      .login-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+      
+      .login-btn:hover i {
+        transform: translateX(3px);
+      }
+      
+      .login-btn i {
+        transition: transform 0.3s;
+      }
+      
+      /* Social Login */
+      .social-login {
+        margin-top: 25px;
+      }
+      
+      .divider {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      
+      .divider::before,
+      .divider::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: rgba(255, 255, 255, 0.1);
+      }
+      
+      .divider span {
+        padding: 0 15px;
+        color: #6b7280;
+        font-size: 13px;
+      }
+      
+      .social-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+      }
+      
+      .social-btn {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.05);
+        color: #fff;
+        font-size: 20px;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .social-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateY(-2px);
+      }
+      
+      .social-btn.google:hover {
+        border-color: #ea4335;
+        color: #ea4335;
+      }
+      
+      .social-btn.microsoft:hover {
+        border-color: #00a4ef;
+        color: #00a4ef;
+      }
+      
+      .social-btn.apple:hover {
+        border-color: #fff;
+      }
+      
+      /* Features List */
+      .features {
+        list-style: none;
+        padding: 0;
+        margin: 30px 0;
+      }
+      
+      .features li {
+        display: flex;
+        align-items: flex-start;
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+      
+      .feature-icon {
+        width: 45px;
+        height: 45px;
+        border-radius: 12px;
+        background: rgba(74, 222, 128, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      
+      .feature-icon i {
+        font-size: 18px;
+        color: #4ade80;
+      }
+      
+      .feature-text h4 {
+        margin: 0 0 5px;
+        font-size: 16px;
+        font-weight: 600;
+        color: #fff;
+      }
+      
+      .feature-text p {
+        margin: 0;
+        font-size: 13px;
+        color: #9ca3af;
+        line-height: 1.5;
+      }
+      
+      /* Quick Stats */
+      .quick-stats {
+        display: flex;
+        justify-content: space-around;
+        padding-top: 25px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        margin-top: 30px;
+      }
+      
+      .stat {
+        text-align: center;
+      }
+      
+      .stat-number {
+        display: block;
+        font-size: 28px;
+        font-weight: 700;
+        color: #4ade80;
+      }
+      
+      .stat-label {
+        font-size: 12px;
+        color: #9ca3af;
+      }
+      
+      .info-description {
+        color: #9ca3af;
+        font-size: 15px;
+        line-height: 1.6;
+        margin-bottom: 25px;
+      }
+      
       @media (max-width: 900px) {
         .quick-stats {
           display: none;
