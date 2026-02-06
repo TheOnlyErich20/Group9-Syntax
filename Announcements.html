@@ -89,9 +89,6 @@
             <button class="announcements-filter" data-filter="event">
               Events
             </button>
-            <button id="postAnnouncementBtn" class="announcements-filter instructor-only" data-filter="post">
-              <i class="fas fa-plus"></i> Post Announcement
-            </button>
           </div>
 
           <div class="announcements-feed">
@@ -280,103 +277,15 @@
       </main>
     </div>
 
-    <!-- Post Announcement Modal (Instructor only) -->
-    <div class="modal" id="postAnnouncementModal">
-      <div class="modal-content">
-        <span class="close">&times;</span>
-        <div class="modal-body">
-          <h2><i class="fas fa-megaphone"></i> Post New Announcement</h2>
-          <form id="postAnnouncementForm" class="instructor-form">
-            <div class="form-group">
-              <label>Title</label>
-              <input type="text" id="announcementTitle" required placeholder="Announcement title" />
-            </div>
-            <div class="form-group">
-              <label>Category</label>
-              <select id="announcementCategory" required>
-                <option value="urgent">Urgent</option>
-                <option value="academic">Academic</option>
-                <option value="event">Events</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Content</label>
-              <textarea id="announcementContent" rows="5" required placeholder="Write your announcement..."></textarea>
-            </div>
-            <button type="submit" class="btn-post-announcement">
-              <i class="fas fa-paper-plane"></i> Post Announcement
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
-
     <script type="module" src="firebase.js"></script>
     <script type="module" src="script.js"></script>
 
     <script type="module">
-      import { logout, postAnnouncement, getAllAnnouncements, isInstructor } from "./script.js";
+      import { logout } from "./script.js"; // Make sure logout function is exported
 
       // Logout button
       const logoutBtn = document.getElementById("logoutBtn");
       logoutBtn.addEventListener("click", (e) => logout(e));
-
-      // Post announcement functionality (Instructor only)
-      const postBtn = document.getElementById("postAnnouncementBtn");
-      const modal = document.getElementById("postAnnouncementModal");
-      const form = document.getElementById("postAnnouncementForm");
-      const closeBtn = modal?.querySelector(".close");
-
-      // Initialize announcement posting
-      async function initializeAnnouncements() {
-        const userIsInstructor = await isInstructor();
-        
-        if (!userIsInstructor) {
-          postBtn?.style.display = "none";
-          return;
-        }
-
-        // Show post button for instructors
-        postBtn?.addEventListener("click", () => {
-          modal.style.display = "block";
-        });
-
-        // Close modal
-        closeBtn?.addEventListener("click", () => {
-          modal.style.display = "none";
-        });
-
-        window.addEventListener("click", (e) => {
-          if (e.target === modal) modal.style.display = "none";
-        });
-
-        // Submit form
-        form?.addEventListener("submit", async (e) => {
-          e.preventDefault();
-          
-          const title = document.getElementById("announcementTitle").value.trim();
-          const category = document.getElementById("announcementCategory").value;
-          const content = document.getElementById("announcementContent").value.trim();
-
-          try {
-            await postAnnouncement({
-              title,
-              category,
-              content,
-              published: true
-            });
-
-            form.reset();
-            modal.style.display = "none";
-            alert("Announcement posted successfully!");
-            location.reload();
-          } catch (error) {
-            alert("Error posting announcement: " + error.message);
-          }
-        });
-      }
-
-      initializeAnnouncements();
     </script>
   </body>
 </html>
