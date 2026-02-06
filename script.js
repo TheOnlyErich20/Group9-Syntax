@@ -1,13 +1,12 @@
 // =========================
-// IMPORT FROM EXISTING MODULES
+// IMPORT FROM FIREBASE JS
 // =========================
-
-// Import Firebase functions from firebase.js
 import { 
     db, 
     collection, 
     addDoc, 
     getDocs, 
+    query, 
     where, 
     doc, 
     updateDoc, 
@@ -16,16 +15,15 @@ import {
     serverTimestamp 
 } from './firebase.js';
 
-// Supabase is already loaded globally from supabase.js
-const supabase = window.supabase.createClient(
-    window.SUPABASE_CONFIG.url,
-    window.SUPABASE_CONFIG.anonKey
-);
+// Initialize Supabase from global config
+const supabase = window.supabase ? window.supabase.createClient(
+    window.SUPABASE_CONFIG?.url || '',
+    window.SUPABASE_CONFIG?.anonKey || ''
+) : null;
 
 // =========================
 // HELPER FUNCTIONS
 // =========================
-
 function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
@@ -33,780 +31,548 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-function capitalizeFirst(str) {
-    if (!str) return '';
-    return str.charAt(0).toUpperCase() + str.slice(1);
+// =========================
+// THEME TOGGLE
+// =========================
+function initializeTheme() {
+    const theme = localStorage.getItem("theme") || "dark";
+    applyTheme(theme);
+}
+
+function applyTheme(theme) {
+    if (theme === "light") document.body.classList.add("light-mode");
+    else document.body.classList.remove("light-mode");
+    localStorage.setItem("theme", theme);
 }
 
 // =========================
-// MODAL FUNCTIONS
+// LOGOUT
 // =========================
-
-window.openTaskModal = function(subjectId, subjectName) {
-    document.getElementById('currentSubjectId').value = subjectId;
-    document.getElementById('currentSubjectName').value = subjectName;
-    document.getElementById('addTaskModal').style.display = 'block';
-};
-
-window.openEditTaskModal = function(taskId, subjectId) {
-    loadTaskForEdit(taskId, subjectId);
-};
-
-window.openFileUploadModal = function(subjectId, taskId = '', type = 'subject') {
-    document.getElementById('uploadSubjectId').value = subjectId;
-    document.getElementById('uploadTaskId').value = taskId;
-    document.getElementById('uploadType').value = type;
-    document.getElementById('fileUploadModal').style.display = 'block';
-};
-
-window.openSubmissionModal = function(taskId, subjectId) {
-    document.getElementById('submitTaskId').value = taskId;
-    document.getElementById('submitSubjectId').value = subjectId;
-    document.getElementById('submissionModal').style.display = 'block';
-};
-
-window.openViewSubmissionsModal = function(taskId, subjectId) {
-    loadSubmissions(taskId, subjectId);
-};
-
-window.openEditSubjectModal = function(subjectId) {
-    loadSubjectForEdit(subjectId);
-};
-
-window.closeModal = function(modalId) {
-    document.getElementById(modalId).style.display = 'none';
-};
-
-window.deleteSubject = async function(subjectId) {
-    if (!confirm("Are you sure you want to delete this subject? All tasks and files will also be deleted.")) return;
-    
-    try {
-        await deleteDoc(doc(db, 'subjects', subjectId));
-        
-        const tasksQuery = query(collection(db, 'tasks'), where('subjectId', '==', subjectId));
-        const tasksSnapshot = await getDocs(tasksQuery);
-        for (const taskDoc of tasksSnapshot.docs) {
-            await deleteDoc(doc(db, 'tasks', taskDoc.id));
-        }
-        
-        alert('Subject deleted successfully!');
-        loadSubjects();
-    } catch (err) {
-        console.error('Error deleting subject:', err);
-        alert('Error deleting subject: ' + err.message);
-    }
-};
-
-window.deleteTask = async function(taskId) {
-    if (!confirm("Are you sure you want to delete this task?")) return;
-    
-    try {
-        await deleteDoc(doc(db, 'tasks', taskId));
-        alert('Task deleted successfully!');
-        loadSubjects();
-    } catch (err) {
-        console.error('Error deleting task:', err);
-        alert('Error deleting task: ' + err.message);
-    }
-};
-
-// =========================
-// LOAD DATA FUNCTIONS
-// =========================
-
-async function loadSubjectForEdit(subjectId) {
-    try {
-        const docRef = doc(db, 'subjects', subjectId);
-        const docSnap = await getDoc(docRef);
-        
-        if (docSnap.exists()) {
-            const subject = docSnap.data();
-            document.getElementById('editSubjectId').value = subjectId;
-            document.getElementById('editSubjectName').value = subject.name;
-            document.getElementById('editTeacherName').value = subject.teacher;
-            document.getElementById('editSubjectTime').value = subject.time;
-            document.getElementById('editSubjectDescription').value = subject.description || '';
-            document.getElementById('editSubjectModal').style.display = 'block';
-        }
-    } catch (err) {
-        console.error('Error loading subject:', err);
-        alert('Error loading subject: ' + err.message);
-    }
-}
-
-async function loadTaskForEdit(taskId, subjectId) {
-    try {
-        const docRef = doc(db, 'tasks', taskId);
-        const docSnap = await getDoc(docRef);
-        
-        if (docSnap.exists()) {
-            const task = docSnap.data();
-            document.getElementById('editTaskId').value = taskId;
-            document.getElementById('editTaskSubjectId').value = subjectId;
-            document.getElementById('editTaskTitle').value = task.title;
-            document.getElementById('editTaskDescription').value = task.description || '';
-            
-            const dueDate = task.dueDate.toDate ? task.dueDate.toDate() : new Date(task.dueDate);
-            document.getElementById('editTaskDueDate').value = dueDate.toISOString().slice(0, 16);
-            
-            document.getElementById('editTaskPriority').value = task.priority || 'medium';
-            document.getElementById('editTaskMaxScore').value = task.maxScore || 100;
-            
-            document.getElementById('editTaskModal').style.display = 'block';
-        }
-    } catch (err) {
-        console.error('Error loading task:', err);
-        alert('Error loading task: ' + err.message);
-    }
-}
-
-async function loadSubmissions(taskId, subjectId) {
-    const submissionsList = document.getElementById('submissionsList');
-    submissionsList.innerHTML = '<p>Loading submissions...</p>';
-    document.getElementById('viewSubmissionsModal').style.display = 'block';
-    
-    try {
-        // Filter by taskId
-        const filterQuery = query(
-            collection(db, 'submissions'),
-            where('taskId', '==', taskId)
-        );
-        const snapshot = await getDocs(filterQuery);
-        
-        // Sort by submittedAt descending in JavaScript
-        let submissions = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        }));
-        
-        submissions.sort((a, b) => {
-            const aTime = a.submittedAt?.toMillis() || 0;
-            const bTime = b.submittedAt?.toMillis() || 0;
-            return bTime - aTime;
-        });
-        
-        if (submissions.length === 0) {
-            submissionsList.innerHTML = '<p>No submissions yet.</p>';
-            return;
-        }
-        
-        let html = '<div style="max-height: 400px; overflow-y: auto;">';
-        for (const submission of submissions) {
-            const submittedAt = submission.submittedAt?.toDate ? submission.submittedAt.toDate() : new Date(submission.submittedAt);
-            
-            html += `
-                <div style="padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 10px;">
-                    <h4 style="margin: 0 0 5px;">${escapeHtml(submission.studentName)}</h4>
-                    <p style="font-size: 12px; color: #aaa; margin: 0 0 10px;">
-                        <i class="fas fa-clock"></i> ${submittedAt.toLocaleString()}
-                    </p>
-                    <p style="margin: 0 0 10px;">${escapeHtml(submission.answer) || 'No text answer'}</p>
-                    ${submission.fileURL ? `
-                        <a href="${submission.fileURL}" target="_blank" style="color: #60a5fa;">
-                            <i class="fas fa-file"></i> ${escapeHtml(submission.fileName)}
-                        </a>
-                    ` : ''}
-                </div>
-            `;
-        }
-        html += '</div>';
-        submissionsList.innerHTML = html;
-    } catch (err) {
-        console.error('Error loading submissions:', err);
-        submissionsList.innerHTML = '<p>Error loading submissions: ' + err.message + '</p>';
-    }
-}
-
-async function loadTasksForSubject(subjectId) {
-    try {
-        // Get tasks filtered by subjectId
-        const filterQuery = query(
-            collection(db, 'tasks'),
-            where('subjectId', '==', subjectId)
-        );
-        const snapshot = await getDocs(filterQuery);
-        
-        let tasks = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        }));
-        
-        // Sort by createdAt descending in JavaScript
-        tasks.sort((a, b) => {
-            const aTime = a.createdAt?.toMillis() || 0;
-            const bTime = b.createdAt?.toMillis() || 0;
-            return bTime - aTime;
-        });
-        
-        return tasks;
-    } catch (err) {
-        console.error('Error loading tasks:', err);
-        return [];
-    }
-}
-
-function createTaskItem(task, subjectId, isInstructor) {
-    const dueDate = task.dueDate.toDate ? task.dueDate.toDate() : new Date(task.dueDate);
-    const now = new Date();
-    const isOverdue = dueDate < now;
-    const priorityClass = task.priority === 'high' ? 'priority-high' : task.priority === 'medium' ? 'priority-medium' : 'priority-low';
-    
-    return `
-        <div class="task-item">
-            <div class="task-header">
-                <span class="task-title">${escapeHtml(task.title)}</span>
-                <span class="task-priority ${priorityClass}">${capitalizeFirst(task.priority)}</span>
-            </div>
-            ${task.description ? `<p class="task-description">${escapeHtml(task.description)}</p>` : ''}
-            <div class="task-meta">
-                <span class="due-date ${isOverdue ? 'overdue' : ''}">
-                    <i class="fas fa-calendar"></i> Due: ${dueDate.toLocaleDateString()} ${dueDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                </span>
-                <span class="max-score">
-                    <i class="fas fa-star"></i> ${task.maxScore || 100} pts
-                </span>
-            </div>
-            <div class="task-actions">
-                ${isInstructor ? `
-                    <button class="btn-action" onclick="openEditTaskModal('${task.id}', '${subjectId}')" title="Edit">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn-action btn-delete" onclick="deleteTask('${task.id}')" title="Delete">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                    <button class="btn-upload" onclick="openFileUploadModal('${subjectId}', '${task.id}', 'task')">
-                        <i class="fas fa-cloud-upload-alt"></i> Upload Material
-                    </button>
-                    <button class="btn-view" onclick="openViewSubmissionsModal('${task.id}', '${subjectId}')">
-                        <i class="fas fa-users"></i> Submissions
-                    </button>
-                ` : `
-                    <button class="btn-submit" onclick="openSubmissionModal('${task.id}', '${subjectId}')">
-                        <i class="fas fa-paper-plane"></i> Submit
-                    </button>
-                `}
-            </div>
-        </div>
-    `;
-}
-
-async function createSubjectCard(subjectId, subject, userData) {
-    const card = document.createElement('div');
-    card.className = 'subject-card';
-    const isInstructor = userData.role === 'instructor';
-    
-    const tasks = await loadTasksForSubject(subjectId);
-    
-    card.innerHTML = `
-        <div class="subject-info">
-            <div class="subject-header-row">
-                <h3><i class="fas fa-book"></i> ${escapeHtml(subject.name)}</h3>
-                ${isInstructor ? `
-                    <div class="subject-actions-row">
-                        <button class="btn-action" onclick="openEditSubjectModal('${subjectId}')" title="Edit">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn-action btn-delete" onclick="deleteSubject('${subjectId}')" title="Delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                ` : ''}
-            </div>
-            <p class="teacher"><i class="fas fa-chalkboard-teacher"></i> ${escapeHtml(subject.teacher)}</p>
-            <p class="time"><i class="fas fa-clock"></i> ${escapeHtml(subject.time)}</p>
-            ${subject.description ? `<p class="description"><i class="fas fa-info-circle"></i> ${escapeHtml(subject.description)}</p>` : ''}
-        </div>
-        <div class="subject-actions">
-            ${isInstructor ? `
-                <button class="btn-add-task" onclick="openTaskModal('${subjectId}', '${escapeHtml(subject.name)}')">
-                    <i class="fas fa-plus"></i> Add Task
-                </button>
-                <button class="btn-upload" onclick="openFileUploadModal('${subjectId}', '', 'subject')">
-                    <i class="fas fa-cloud-upload-alt"></i> Upload
-                </button>
-            ` : ''}
-        </div>
-        <div class="tasks-section" id="tasks-${subjectId}">
-            ${tasks.length > 0 ? `
-                <h4><i class="fas fa-tasks"></i> Tasks</h4>
-                <div class="tasks-list">
-                    ${tasks.map(task => createTaskItem(task, subjectId, isInstructor)).join('')}
-                </div>
-            ` : '<p class="no-tasks">No tasks yet.</p>'}
-        </div>
-    `;
-    
-    return card;
-}
-
-async function loadSubjects() {
-    const subjectsGrid = document.getElementById('subjectsGrid');
-    const addSubjectBtn = document.getElementById('addSubjectBtn');
-    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-    const isInstructor = userData.role === 'instructor';
-    
-    if (addSubjectBtn) {
-        addSubjectBtn.style.display = isInstructor ? 'flex' : 'none';
-    }
-    
-    if (!subjectsGrid) return;
-    
-    subjectsGrid.innerHTML = '<p>Loading subjects...</p>';
-    
-    try {
-        let subjects = [];
-        
-        if (isInstructor) {
-            // For instructors, filter by instructorId first
-            const filterQuery = query(
-                collection(db, 'subjects'),
-                where('instructorId', '==', userData.id)
-            );
-            const snapshot = await getDocs(filterQuery);
-            
-            // Sort in JavaScript (no composite index needed)
-            snapshot.forEach(doc => {
-                subjects.push({ id: doc.id, ...doc.data() });
-            });
-            
-            // Sort by createdAt descending
-            subjects.sort((a, b) => {
-                const aTime = a.createdAt?.toMillis() || 0;
-                const bTime = b.createdAt?.toMillis() || 0;
-                return bTime - aTime;
-            });
-        } else {
-            // For students, get all subjects and sort
-            const allQuery = query(collection(db, 'subjects'));
-            const snapshot = await getDocs(allQuery);
-            
-            snapshot.forEach(doc => {
-                subjects.push({ id: doc.id, ...doc.data() });
-            });
-            
-            // Sort by createdAt descending
-            subjects.sort((a, b) => {
-                const aTime = a.createdAt?.toMillis() || 0;
-                const bTime = b.createdAt?.toMillis() || 0;
-                return bTime - aTime;
-            });
-        }
-        
-        subjectsGrid.innerHTML = '';
-        
-        if (subjects.length === 0) {
-            subjectsGrid.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-book-open"></i>
-                    <p>${isInstructor ? 'No subjects yet. Click + Add Subject to create one.' : 'No subjects available.'}</p>
-                </div>
-            `;
-            return;
-        }
-        
-        for (const subject of subjects) {
-            const subjectCard = await createSubjectCard(subject.id, subject, userData);
-            subjectsGrid.appendChild(subjectCard);
-        }
-    } catch (err) {
-        console.error('Error loading subjects:', err);
-        subjectsGrid.innerHTML = `
-            <div class="empty-state">
-                <i class="fas fa-exclamation-triangle"></i>
-                <p>Error loading subjects. Please try again.</p>
-                <p style="font-size: 12px; color: #aaa;">${err.message}</p>
-            </div>
-        `;
-    }
+function logout(e) {
+    if (e) e.preventDefault();
+    localStorage.clear();
+    location.href = "Login.html";
 }
 
 // =========================
-// FORM HANDLERS
+// SUBJECTS PAGE FUNCTIONALITY
 // =========================
-
-async function initAddSubjectForm() {
-    const form = document.getElementById('addSubjectForm');
-    const modal = document.getElementById('addSubjectModal');
+async function initializeSubjects() {
+    const listContainer = document.getElementById('subjectsList');
+    const detailsContainer = document.getElementById('subjectDetailsPanel');
     const addBtn = document.getElementById('addSubjectBtn');
-    
-    if (!form || !modal) return;
-    
+    const addModal = document.getElementById('addSubjectModal');
+    const addForm = document.getElementById('addSubjectForm');
+    const addTaskModal = document.getElementById('addTaskModal');
+    const addTaskForm = document.getElementById('addTaskForm');
+    const submissionModal = document.getElementById('submissionModal');
+    const submissionForm = document.getElementById('submissionForm');
+
+    if (!listContainer || !detailsContainer) return;
+
+    const userData = JSON.parse(localStorage.getItem("userData"));
+    const isInstructor = userData?.role === 'instructor';
+
+    // Show/hide add button based on role
     if (addBtn) {
-        addBtn.addEventListener('click', function() {
-            modal.style.display = 'block';
-        });
+        addBtn.style.display = isInstructor ? 'flex' : 'none';
     }
-    
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const name = document.getElementById('newSubjectName').value.trim();
-        const teacher = document.getElementById('newTeacherName').value.trim();
-        const time = document.getElementById('newSubjectTime').value.trim();
-        const description = document.getElementById('newSubjectDescription').value.trim();
-        
-        const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-        
-        if (!name || !teacher || !time) {
-            alert('Please fill in all required fields');
-            return;
+
+    let subjects = [];
+
+    // Load subjects from Firestore
+    try {
+        let q;
+        if (isInstructor) {
+            q = query(collection(db, "subjects"), where("instructorId", "==", userData.id));
+        } else {
+            q = query(collection(db, "subjects"));
         }
         
-        const subjectData = {
-            name: name,
-            teacher: teacher,
-            time: time,
-            description: description,
+        const snapshot = await getDocs(q);
+        snapshot.forEach(doc => {
+            subjects.push({ id: doc.id, ...doc.data() });
+        });
+    } catch (err) {
+        console.error("Error loading subjects:", err);
+        // Fallback dummy data
+        subjects = [
+            { id: "demo1", name: "Mathematics", teacher: "Mr. Anderson", time: "08:00 AM - 09:30 AM", description: "Advanced Calculus and Algebra" },
+            { id: "demo2", name: "Physics", teacher: "Ms. Curie", time: "10:00 AM - 11:30 AM", description: "Fundamentals of Physics" },
+            { id: "demo3", name: "Computer Science", teacher: "Mr. Turing", time: "01:00 PM - 02:30 PM", description: "Algorithms and Data Structures" }
+        ];
+    }
+
+    // =========================
+    // RENDER SUBJECTS
+    // =========================
+    function renderSubjects() {
+        if (subjects.length === 0) {
+            listContainer.innerHTML = `
+                <div class="empty-state" style="text-align: center; padding: 20px; color: #aaa;">
+                    <i class="fas fa-book"></i>
+                    <p>${isInstructor ? 'No subjects yet. Click + to add one.' : 'No subjects available.'}</p>
+                </div>
+            `;
+            return;
+        }
+
+        listContainer.innerHTML = subjects.map((sub, index) => `
+            <div class="subject-list-item" data-index="${index}" data-id="${sub.id}">
+                <h4>${escapeHtml(sub.name)}</h4>
+                <p><i class="fas fa-chalkboard-teacher"></i> ${escapeHtml(sub.teacher || 'TBA')}</p>
+            </div>
+        `).join('');
+
+        document.querySelectorAll('.subject-list-item').forEach(item => {
+            item.addEventListener('click', () => {
+                document.querySelectorAll('.subject-list-item').forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                renderSubjectDetails(item.dataset.index);
+            });
+        });
+    }
+
+    // =========================
+    // RENDER DETAILS
+    // =========================
+    async function renderSubjectDetails(index) {
+        const sub = subjects[index];
+        if (!sub) return;
+
+        // Load tasks for this subject
+        let tasks = [];
+        try {
+            const tasksQuery = query(collection(db, "tasks"), where("subjectId", "==", sub.id));
+            const tasksSnapshot = await getDocs(tasksQuery);
+            tasksSnapshot.forEach(doc => {
+                tasks.push({ id: doc.id, ...doc.data() });
+            });
+        } catch (err) {
+            console.error("Error loading tasks:", err);
+        }
+
+        // Sort tasks by due date
+        tasks.sort((a, b) => {
+            const aDate = a.dueDate?.toMillis?.() || new Date(a.dueDate).getTime();
+            const bDate = b.dueDate?.toMillis?.() || new Date(b.dueDate).getTime();
+            return aDate - bDate;
+        });
+
+        if (isInstructor) {
+            detailsContainer.innerHTML = `
+                <div class="detail-header">
+                    <h2>${escapeHtml(sub.name)}</h2>
+                    <div class="detail-meta">
+                        <span><i class="fas fa-chalkboard-teacher"></i> ${escapeHtml(sub.teacher || 'TBA')}</span>
+                        <span><i class="fas fa-clock"></i> ${escapeHtml(sub.time || 'TBA')}</span>
+                    </div>
+                    <p class="detail-description">${escapeHtml(sub.description || 'No description available.')}</p>
+                </div>
+
+                <div class="lessons-container" style="margin-top: 20px;">
+                    <h3 style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                        <i class="fas fa-tasks"></i> Tasks & Assignments
+                        <button onclick="openTaskModal('${sub.id}')" class="btn-add-mini" title="Add Task">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </h3>
+                    <div class="tasks-list" id="tasksList">
+                        ${tasks.length > 0 ? tasks.map(task => `
+                            <div class="task-item" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 10px;">
+                                <div>
+                                    <h4 style="margin: 0 0 5px;">${escapeHtml(task.title)}</h4>
+                                    <p style="font-size: 12px; color: #aaa; margin: 0;">
+                                        <i class="fas fa-clock"></i> Due: ${new Date(task.dueDate?.toMillis?.() || task.dueDate).toLocaleDateString()}
+                                        <span style="margin-left: 10px;"><i class="fas fa-star"></i> ${task.maxScore || 100} pts</span>
+                                    </p>
+                                </div>
+                                <div class="task-actions" style="display: flex; gap: 8px;">
+                                    <button onclick="deleteTask('${sub.id}', '${task.id}')" class="btn-action" title="Delete" style="background: rgba(239, 68, 68, 0.2); border: none; padding: 8px 12px; border-radius: 6px; color: #f87171; cursor: pointer;">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('') : '<p style="color: #aaa;">No tasks yet. Click + to add one.</p>'}
+                    </div>
+                </div>
+            `;
+        } else {
+            detailsContainer.innerHTML = `
+                <div class="detail-header">
+                    <h2>${escapeHtml(sub.name)}</h2>
+                    <div class="detail-meta">
+                        <span><i class="fas fa-chalkboard-teacher"></i> ${escapeHtml(sub.teacher || 'TBA')}</span>
+                        <span><i class="fas fa-clock"></i> ${escapeHtml(sub.time || 'TBA')}</span>
+                    </div>
+                    <p class="detail-description">${escapeHtml(sub.description || 'No description available.')}</p>
+                </div>
+
+                <div class="assignments-section" style="margin-top: 25px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 10px;">
+                    <h3 style="margin-bottom: 15px;"><i class="fas fa-tasks"></i> Your Assignments</h3>
+                    <div class="assignments-list">
+                        ${tasks.length > 0 ? tasks.map(task => `
+                            <div class="assignment-item" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 10px;">
+                                <div>
+                                    <h4 style="margin: 0 0 5px;">${escapeHtml(task.title)}</h4>
+                                    <p style="font-size: 12px; color: #aaa; margin: 0;">
+                                        <i class="fas fa-clock"></i> Due: ${new Date(task.dueDate?.toMillis?.() || task.dueDate).toLocaleDateString()}
+                                        <span style="margin-left: 10px;"><i class="fas fa-star"></i> ${task.maxScore || 100} pts</span>
+                                    </p>
+                                </div>
+                                <button onclick="openSubmissionModal('${task.id}', '${sub.id}')" class="login-btn" style="width: auto; padding: 8px 16px; background: #4ade80;">
+                                    <i class="fas fa-paper-plane"></i> Submit
+                                </button>
+                            </div>
+                        `).join('') : '<p style="color: #aaa;">No assignments available.</p>'}
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    // =========================
+    // OPEN MODALS
+    // =========================
+    window.openTaskModal = function(subjectId) {
+        document.getElementById('currentSubjectId').value = subjectId;
+        addTaskModal.style.display = 'block';
+    };
+
+    window.openSubmissionModal = function(taskId, subjectId) {
+        document.getElementById('submitTaskId').value = taskId;
+        document.getElementById('submitSubjectId').value = subjectId;
+        submissionModal.style.display = 'block';
+    };
+
+    window.deleteTask = async function(subjectId, taskId) {
+        if (!confirm("Are you sure you want to delete this task?")) return;
+
+        try {
+            await deleteDoc(doc(db, "tasks", taskId));
+            const activeIndex = document.querySelector('.subject-list-item.active')?.dataset.index || 0;
+            renderSubjectDetails(activeIndex);
+        } catch (err) {
+            console.error("Error deleting task:", err);
+            alert("Error deleting task: " + err.message);
+        }
+    };
+
+    // =========================
+    // ADD SUBJECT (FORM)
+    // =========================
+    addForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const subject = {
+            name: document.getElementById('newSubjectName').value.trim(),
+            teacher: document.getElementById('newTeacherName').value.trim(),
+            time: document.getElementById('newSubjectTime').value.trim(),
+            description: document.getElementById('newSubjectDescription').value.trim(),
             instructorId: userData.id,
             instructorName: userData.name,
             createdAt: serverTimestamp()
         };
-        
-        try {
-            const docRef = await addDoc(collection(db, 'subjects'), subjectData);
-            alert('Subject added successfully!');
-            form.reset();
-            modal.style.display = 'none';
-            loadSubjects();
-        } catch (err) {
-            console.error('Error adding subject:', err);
-            alert('Error adding subject: ' + err.message);
-        }
-    });
-}
 
-async function initEditSubjectForm() {
-    const form = document.getElementById('editSubjectForm');
-    if (!form) return;
-    
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const subjectId = document.getElementById('editSubjectId').value;
-        const name = document.getElementById('editSubjectName').value.trim();
-        const teacher = document.getElementById('editTeacherName').value.trim();
-        const time = document.getElementById('editSubjectTime').value.trim();
-        const description = document.getElementById('editSubjectDescription').value.trim();
-        
-        try {
-            await updateDoc(doc(db, 'subjects', subjectId), {
-                name: name,
-                teacher: teacher,
-                time: time,
-                description: description,
-                updatedAt: serverTimestamp()
-            });
-            
-            alert('Subject updated successfully!');
-            document.getElementById('editSubjectModal').style.display = 'none';
-            loadSubjects();
-        } catch (err) {
-            console.error('Error updating subject:', err);
-            alert('Error updating subject: ' + err.message);
-        }
-    });
-}
-
-async function initAddTaskForm() {
-    const form = document.getElementById('addTaskForm');
-    if (!form) return;
-    
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const title = document.getElementById('newTaskTitle').value.trim();
-        const description = document.getElementById('newTaskDescription').value.trim();
-        const dueDate = document.getElementById('newTaskDueDate').value;
-        const priority = document.getElementById('newTaskPriority').value;
-        const maxScore = document.getElementById('newTaskMaxScore').value;
-        const subjectId = document.getElementById('currentSubjectId').value;
-        const subjectName = document.getElementById('currentSubjectName').value;
-        const fileInput = document.getElementById('newTaskAttachments');
-        
-        if (!title || !dueDate) {
-            alert('Please fill in all required fields');
+        if (!userData?.id) {
+            alert('User not logged in. Please log in first.');
             return;
         }
-        
-        const taskData = {
-            title: title,
-            description: description,
-            dueDate: new Date(dueDate),
-            priority: priority,
-            maxScore: parseInt(maxScore) || 100,
-            subjectId: subjectId,
-            subjectName: subjectName,
-            status: 'active',
+
+        try {
+            const subjectRef = await addDoc(collection(db, "subjects"), subject);
+            subjects.push({ id: subjectRef.id, ...subject });
+            renderSubjects();
+            addForm.reset();
+            addModal.style.display = 'none';
+        } catch (err) {
+            console.error("Error adding subject:", err);
+            alert("Error adding subject: " + err.message);
+        }
+    });
+
+    // =========================
+    // ADD TASK (FORM)
+    // =========================
+    addTaskForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const task = {
+            title: document.getElementById('newTaskTitle').value.trim(),
+            description: document.getElementById('newTaskDescription').value.trim(),
+            dueDate: new Date(document.getElementById('newTaskDueDate').value),
+            maxScore: parseInt(document.getElementById('newTaskMaxScore').value),
+            subjectId: document.getElementById('currentSubjectId').value,
             createdAt: serverTimestamp()
         };
-        
+
         try {
-            const taskRef = await addDoc(collection(db, 'tasks'), taskData);
-            
-            if (fileInput.files.length > 0) {
-                const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-                
-                for (const file of fileInput.files) {
-                    const fileName = file.name;
-                    const fileSize = file.size;
-                    
-                    if (fileSize > 10 * 1024 * 1024) {
-                        alert(`File ${fileName} is too large. Max size is 10MB.`);
-                        continue;
-                    }
-                    
-                    const filePath = `task-attachments/${subjectId}/${taskRef.id}/${Date.now()}_${fileName}`;
-                    
-                    const { data, error } = await supabase.storage
-                        .from('task-attachments')
-                        .upload(filePath, file);
-                    
-                    if (error) {
-                        console.error('Error uploading file:', error);
-                        continue;
-                    }
-                    
-                    const { data: urlData } = supabase.storage
-                        .from('task-attachments')
-                        .getPublicUrl(filePath);
-                    
-                    await addDoc(collection(db, 'taskAttachments'), {
-                        taskId: taskRef.id,
-                        subjectId: subjectId,
-                        fileName: fileName,
-                        fileURL: urlData.publicUrl,
-                        filePath: filePath,
-                        fileSize: fileSize,
-                        uploadedBy: userData.name,
-                        uploadedAt: serverTimestamp()
-                    });
-                }
-            }
-            
-            alert('Task added successfully!');
-            form.reset();
-            document.getElementById('addTaskModal').style.display = 'none';
-            loadSubjects();
+            await addDoc(collection(db, "tasks"), task);
+            const activeIndex = document.querySelector('.subject-list-item.active')?.dataset.index || 0;
+            renderSubjectDetails(activeIndex);
+            addTaskForm.reset();
+            addTaskModal.style.display = 'none';
         } catch (err) {
-            console.error('Error adding task:', err);
-            alert('Error adding task: ' + err.message);
+            console.error("Error adding task:", err);
+            alert("Error adding task: " + err.message);
         }
     });
-}
 
-async function initEditTaskForm() {
-    const form = document.getElementById('editTaskForm');
-    if (!form) return;
-    
-    form.addEventListener('submit', async function(e) {
+    // =========================
+    // SUBMISSION (FORM)
+    // =========================
+    submissionForm?.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
-        const taskId = document.getElementById('editTaskId').value;
-        const subjectId = document.getElementById('editTaskSubjectId').value;
-        const title = document.getElementById('editTaskTitle').value.trim();
-        const description = document.getElementById('editTaskDescription').value.trim();
-        const dueDate = document.getElementById('editTaskDueDate').value;
-        const priority = document.getElementById('editTaskPriority').value;
-        const maxScore = document.getElementById('editTaskMaxScore').value;
-        
-        try {
-            await updateDoc(doc(db, 'tasks', taskId), {
-                title: title,
-                description: description,
-                dueDate: new Date(dueDate),
-                priority: priority,
-                maxScore: parseInt(maxScore) || 100,
-                updatedAt: serverTimestamp()
-            });
-            
-            alert('Task updated successfully!');
-            document.getElementById('editTaskModal').style.display = 'none';
-            loadSubjects();
-        } catch (err) {
-            console.error('Error updating task:', err);
-            alert('Error updating task: ' + err.message);
-        }
-    });
-}
 
-async function initFileUploadForm() {
-    const form = document.getElementById('fileUploadForm');
-    if (!form) return;
-    
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const fileInput = document.getElementById('fileToUpload');
-        const fileDescription = document.getElementById('fileDescription').value.trim();
-        const subjectId = document.getElementById('uploadSubjectId').value;
-        const taskId = document.getElementById('uploadTaskId').value;
-        const uploadType = document.getElementById('uploadType').value;
-        
-        if (fileInput.files.length === 0) {
-            alert('Please select a file');
-            return;
-        }
-        
-        const file = fileInput.files[0];
-        const fileName = file.name;
-        const fileSize = file.size;
-        
-        if (fileSize > 10 * 1024 * 1024) {
-            alert('File size must be less than 10MB');
-            return;
-        }
-        
-        const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-        
-        try {
-            let bucket, filePath;
-            
-            if (uploadType === 'task') {
-                bucket = 'task-attachments';
-                filePath = `task-attachments/${subjectId}/${taskId}/${Date.now()}_${fileName}`;
-            } else {
-                bucket = 'subject-files';
-                filePath = `subject-files/${subjectId}/${Date.now()}_${fileName}`;
-            }
-            
-            const { data, error } = await supabase.storage
-                .from(bucket)
-                .upload(filePath, file);
-            
-            if (error) throw error;
-            
-            const { data: urlData } = supabase.storage
-                .from(bucket)
-                .getPublicUrl(filePath);
-            
-            const fileData = {
-                fileName: fileName,
-                fileURL: urlData.publicUrl,
-                filePath: filePath,
-                description: fileDescription,
-                subjectId: subjectId,
-                taskId: taskId || null,
-                uploadType: uploadType,
-                uploadedBy: userData.name,
-                uploadedById: userData.id,
-                uploadedAt: serverTimestamp()
-            };
-            
-            await addDoc(collection(db, 'files'), fileData);
-            
-            alert('File uploaded successfully!');
-            form.reset();
-            document.getElementById('fileUploadModal').style.display = 'none';
-            loadSubjects();
-        } catch (err) {
-            console.error('Error uploading file:', err);
-            alert('Error uploading file: ' + err.message);
-        }
-    });
-}
-
-async function initSubmissionForm() {
-    const form = document.getElementById('submissionForm');
-    if (!form) return;
-    
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const submissionText = document.getElementById('submissionText').value.trim();
-        const fileInput = document.getElementById('submissionFile');
         const taskId = document.getElementById('submitTaskId').value;
         const subjectId = document.getElementById('submitSubjectId').value;
-        
-        if (!submissionText && fileInput.files.length === 0) {
-            alert('Please provide a text answer or attach a file');
+        const answer = document.getElementById('submissionText').value.trim();
+        const fileInput = document.getElementById('submissionFile');
+
+        if (!answer && !fileInput.files.length) {
+            alert('Please provide an answer or attach a file.');
             return;
         }
-        
-        const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-        
-        const submissionData = {
+
+        const submission = {
             taskId: taskId,
             subjectId: subjectId,
             studentId: userData.id,
             studentName: userData.name,
-            answer: submissionText,
-            submittedAt: serverTimestamp(),
-            status: 'submitted'
+            answer: answer,
+            submittedAt: serverTimestamp()
         };
-        
+
         try {
-            if (fileInput.files.length > 0) {
+            // Upload file if attached
+            if (fileInput.files.length > 0 && supabase) {
                 const file = fileInput.files[0];
-                const fileName = file.name;
-                const fileSize = file.size;
-                
-                if (fileSize > 10 * 1024 * 1024) {
-                    alert('File size must be less than 10MB');
-                    return;
-                }
-                
-                const filePath = `student-submissions/${subjectId}/${taskId}/${userData.id}/${Date.now()}_${fileName}`;
+                const filePath = `submissions/${subjectId}/${taskId}/${userData.id}/${Date.now()}_${file.name}`;
                 
                 const { data, error } = await supabase.storage
                     .from('student-submissions')
                     .upload(filePath, file);
                 
-                if (error) throw error;
-                
-                const { data: urlData } = supabase.storage
-                    .from('student-submissions')
-                    .getPublicUrl(filePath);
-                
-                submissionData.fileURL = urlData.publicUrl;
-                submissionData.fileName = fileName;
-                submissionData.fileSize = fileSize;
+                if (!error) {
+                    const { data: urlData } = supabase.storage
+                        .from('student-submissions')
+                        .getPublicUrl(filePath);
+                    
+                    submission.fileURL = urlData.publicUrl;
+                    submission.fileName = file.name;
+                }
             }
-            
-            await addDoc(collection(db, 'submissions'), submissionData);
+
+            await addDoc(collection(db, "submissions"), submission);
             
             alert('Submission successful!');
-            form.reset();
-            document.getElementById('submissionModal').style.display = 'none';
-            loadSubjects();
+            submissionForm.reset();
+            submissionModal.style.display = 'none';
         } catch (err) {
-            console.error('Error submitting:', err);
-            alert('Error submitting: ' + err.message);
+            console.error("Error submitting:", err);
+            alert("Error submitting: " + err.message);
         }
     });
-}
 
-function initModalCloseHandlers() {
+    // =========================
+    // OPEN ADD MODAL
+    // =========================
+    addBtn?.addEventListener('click', () => {
+        addModal.style.display = 'block';
+    });
+
+    // =========================
+    // CLOSE MODALS
+    // =========================
     document.querySelectorAll('.modal .close').forEach(btn => {
-        btn.addEventListener('click', function() {
-            this.closest('.modal').style.display = 'none';
+        btn.addEventListener('click', () => {
+            btn.closest('.modal').style.display = 'none';
         });
     });
-    
-    window.addEventListener('click', function(e) {
+
+    window.addEventListener('click', (e) => {
         if (e.target.classList.contains('modal')) {
             e.target.style.display = 'none';
         }
     });
+
+    // Initial Render
+    renderSubjects();
 }
 
 // =========================
-// PAGE INITIALIZATION
+// PROFILE PAGE FUNCTIONALITY
 // =========================
+function initializeProfile() {
+    const editBtn = document.getElementById('editProfileBtn');
+    const modal = document.getElementById('editProfileModal');
+    const closeBtn = document.getElementById('closeModalBtn');
+    const cancelBtn = document.getElementById('cancelModalBtn');
+    const editForm = document.getElementById('editForm');
 
-document.addEventListener('DOMContentLoaded', async function() {
-    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-    const userNameEl = document.getElementById('userName');
-    if (userNameEl) {
-        userNameEl.textContent = userData.name || 'User';
+    if (!editBtn || !modal || !editForm) return;
+
+    const savedProfile = localStorage.getItem('userProfile');
+    if (savedProfile) {
+        const data = JSON.parse(savedProfile);
+        updateProfileUI(data);
     }
+
+    editBtn.addEventListener('click', () => {
+        document.getElementById('editName').value = document.getElementById('fullName').textContent;
+        document.getElementById('editEmail').value = document.getElementById('infoEmail').textContent;
+        document.getElementById('editPhone').value = document.getElementById('infoPhone').textContent;
+        document.getElementById('editGender').value = document.getElementById('infoGender').textContent;
+        
+        const dobText = document.getElementById('infoDOB').textContent;
+        const dateObj = new Date(dobText);
+        if (!isNaN(dateObj.getTime())) {
+             document.getElementById('editDOB').value = dateObj.toISOString().split('T')[0];
+        }
+        
+        modal.style.display = 'block';
+    });
+
+    const closeModal = () => modal.style.display = 'none';
+    closeBtn?.addEventListener('click', closeModal);
+    cancelBtn?.addEventListener('click', closeModal);
+    window.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+
+    editForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const newData = {
+            fullName: document.getElementById('editName').value,
+            email: document.getElementById('editEmail').value,
+            phone: document.getElementById('editPhone').value,
+            dob: document.getElementById('editDOB').value,
+            gender: document.getElementById('editGender').value
+        };
+
+        const dateObj = new Date(newData.dob);
+        const options = { year: 'numeric', month: 'long', day: 'numeric' };
+        const displayDate = !isNaN(dateObj.getTime()) ? dateObj.toLocaleDateString('en-US', options) : newData.dob;
+        
+        const uiData = { ...newData, dob: displayDate };
+        updateProfileUI(uiData);
+        localStorage.setItem('userProfile', JSON.stringify(uiData));
+        
+        const userData = JSON.parse(localStorage.getItem('userData')) || {};
+        userData.name = newData.fullName;
+        localStorage.setItem('userData', JSON.stringify(userData));
+
+        closeModal();
+    });
+}
+
+function updateProfileUI(data) {
+    if(data.fullName) {
+        document.getElementById('fullName').textContent = data.fullName;
+        const displayName = document.getElementById('displayName');
+        if(displayName) displayName.textContent = data.fullName;
+    }
+    if(data.email) {
+        document.getElementById('infoEmail').textContent = data.email;
+        const displayEmail = document.getElementById('displayEmail');
+        if(displayEmail) displayEmail.textContent = data.email;
+    }
+    if(data.phone) document.getElementById('infoPhone').textContent = data.phone;
+    if(data.dob) document.getElementById('infoDOB').textContent = data.dob;
+    if(data.gender) document.getElementById('infoGender').textContent = data.gender;
+}
+
+// =========================
+// GRADES PAGE FUNCTIONALITY
+// =========================
+function initializeGradesTable() {
+    const rows = document.querySelectorAll('.grades-table .table-row');
     
-    initAddSubjectForm();
-    initEditSubjectForm();
-    initAddTaskForm();
-    initEditTaskForm();
-    initFileUploadForm();
-    initSubmissionForm();
-    initModalCloseHandlers();
+    rows.forEach(row => {
+        row.addEventListener('click', () => {
+            rows.forEach(r => {
+                if (r !== row) r.classList.remove('active');
+            });
+            row.classList.toggle('active');
+        });
+    });
+}
+
+function initializeGradesFilter() {
+    const controls = document.querySelector('.grades-controls');
+    if (!controls) return;
+
+    const table = document.querySelector('.grades-table');
+    if (!table) return;
+
+    const buttons = controls.querySelectorAll('button[data-term]');
+
+    buttons.forEach(button => {
+        button.addEventListener('click', () => {
+            buttons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+
+            const term = button.dataset.term;
+            table.classList.remove('show-prelim', 'show-midterm', 'show-final');
+
+            if (term !== 'all') {
+                table.classList.add(`show-${term}`);
+            }
+        });
+    });
+}
+
+// =========================
+// HELP PAGE FUNCTIONALITY
+// =========================
+function initializeHelp() {
+    const faqItems = document.querySelectorAll('.faq-item');
     
-    loadSubjects();
+    faqItems.forEach(item => {
+        const question = item.querySelector('.faq-question');
+        if (!question) return;
+
+        question.addEventListener('click', () => {
+            const isActive = item.classList.contains('active');
+            faqItems.forEach(otherItem => {
+                otherItem.classList.remove('active');
+            });
+            if (!isActive) {
+                item.classList.add('active');
+            }
+        });
+    });
+
+    const contactForm = document.getElementById('helpContactForm');
+    contactForm?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const btn = contactForm.querySelector('.btn-submit');
+        const originalText = btn.textContent;
+        btn.textContent = 'Message Sent!';
+        btn.style.background = '#4ade80';
+        setTimeout(() => { btn.textContent = originalText; btn.style.background = ''; contactForm.reset(); }, 3000);
+    });
+}
+
+// =========================
+// INITIALIZE EVERYTHING ON DOM
+// =========================
+document.addEventListener("DOMContentLoaded", () => {
+    initializeTheme();
+    initializeSubjects();
+    initializeProfile();
+    initializeGradesTable();
+    initializeGradesFilter();
+    initializeHelp();
+
+    // Theme buttons
+    document.getElementById("darkModeBtn")?.addEventListener("click", () => applyTheme("dark"));
+    document.getElementById("lightModeBtn")?.addEventListener("click", () => applyTheme("light"));
+    document.getElementById("darkThemeBtn")?.addEventListener("click", () => applyTheme("dark"));
+    document.getElementById("lightThemeBtn")?.addEventListener("click", () => applyTheme("light"));
+    document.getElementById("logoutBtn")?.addEventListener("click", logout);
 });
+
+// Export for use
+export { logout, applyTheme };
