@@ -288,7 +288,7 @@ function initializeHelp() {
 // =========================
 // SUBJECTS PAGE FUNCTIONALITY
 // =========================
-function initializeSubjects() {
+async function initializeSubjects() {
     const listContainer = document.getElementById('subjectsList');
     const detailsContainer = document.getElementById('subjectDetailsPanel');
     const addBtn = document.getElementById('addSubjectBtn');
@@ -297,12 +297,21 @@ function initializeSubjects() {
 
     if (!listContainer || !detailsContainer) return;
 
-    // Dummy data for demonstration
-    let subjects = [
-        { name: "Mathematics", teacher: "Mr. Anderson", time: "08:00 AM - 09:30 AM", description: "Advanced Calculus and Algebra" },
-        { name: "Physics", teacher: "Ms. Curie", time: "10:00 AM - 11:30 AM", description: "Fundamentals of Physics" },
-        { name: "Computer Science", teacher: "Mr. Turing", time: "01:00 PM - 02:30 PM", description: "Algorithms and Data Structures" }
-    ];
+    // Get user role
+    const userData = JSON.parse(localStorage.getItem("userData"));
+    const isInstructor = userData?.role === "instructor";
+
+    // Load subjects from Firestore
+    let subjects = await getAllSubjects();
+    
+    // Fallback to dummy data if no subjects in Firestore
+    if (subjects.length === 0) {
+        subjects = [
+            { name: "Mathematics", teacher: "Mr. Anderson", time: "08:00 AM - 09:30 AM", description: "Advanced Calculus and Algebra" },
+            { name: "Physics", teacher: "Ms. Curie", time: "10:00 AM - 11:30 AM", description: "Fundamentals of Physics" },
+            { name: "Computer Science", teacher: "Mr. Turing", time: "01:00 PM - 02:30 PM", description: "Algorithms and Data Structures" }
+        ];
+    }
 
     // Dummy lessons data
     const dummyLessons = [
@@ -317,7 +326,7 @@ function initializeSubjects() {
     // -------------------------
     function renderSubjects() {
         listContainer.innerHTML = subjects.map((sub, index) => `
-            <div class="subject-list-item" data-index="${index}">
+            <div class="subject-list-item" data-id="${sub.id}" data-index="${index}">
                 <h4>${sub.name}</h4>
                 <p><i class="fas fa-chalkboard-teacher"></i> ${sub.teacher}</p>
             </div>
@@ -371,11 +380,16 @@ function initializeSubjects() {
     }
 
     // -------------------------
-    // OPEN ADD MODAL
+    // OPEN ADD MODAL (Instructor only)
     // -------------------------
-    addBtn?.addEventListener('click', () => {
-        addModal.style.display = 'block';
-    });
+    if (isInstructor) {
+        addBtn?.addEventListener('click', () => {
+            addModal.style.display = 'block';
+        });
+    } else {
+        // Hide add button for non-instructors
+        addBtn?.style.display = 'none';
+    }
 
     // -------------------------
     // CLOSE MODALS
@@ -391,24 +405,40 @@ function initializeSubjects() {
     });
 
     // -------------------------
-    // ADD SUBJECT (FORM)
+    // ADD SUBJECT (FORM - Instructor only)
     // -------------------------
-    addForm?.addEventListener('submit', e => {
-        e.preventDefault();
+    if (isInstructor) {
+        addForm?.addEventListener('submit', async e => {
+            e.preventDefault();
 
-        const subject = {
-            name: document.getElementById('newSubjectName').value.trim(),
-            teacher: document.getElementById('newTeacherName').value.trim(),
-            time: document.getElementById('newSubjectTime').value.trim(),
-            description: document.getElementById('newSubjectDescription').value.trim()
-        };
+            const subject = {
+                name: document.getElementById('newSubjectName').value.trim(),
+                teacher: document.getElementById('newTeacherName').value.trim(),
+                time: document.getElementById('newSubjectTime').value.trim(),
+                description: document.getElementById('newSubjectDescription').value.trim()
+            };
 
-        subjects.push(subject);
-        renderSubjects();
+            try {
+                // Save to Firestore
+                const subjectId = await addSubject(subject);
+                
+                // Add to local array with ID
+                subjects.push({ id: subjectId, ...subject });
+                renderSubjects();
 
-        addForm.reset();
-        addModal.style.display = 'none';
-    });
+                addForm.reset();
+                addModal.style.display = 'none';
+            } catch (error) {
+                console.error("Error adding subject:", error);
+                alert("Error adding subject: " + error.message);
+            }
+        });
+    } else {
+        // Disable form for non-instructors
+        addForm?.querySelectorAll('input, textarea').forEach(el => {
+            el.disabled = true;
+        });
+    }
 
     // Initial Render
     renderSubjects();
@@ -522,4 +552,273 @@ function applyRoleBasedUI() {
     });
 
     // Hide/Show student-only elements
-   
+    document.querySelectorAll('.student-only').forEach(el => {
+        el.style.display = isInstructor ? 'none' : '';
+    });
+
+    // Disable instructor-only forms for students
+    if (!isInstructor) {
+        document.querySelectorAll('.instructor-form input, .instructor-form select, .instructor-form textarea').forEach(el => {
+            el.disabled = true;
+        });
+    }
+}
+
+// =========================
+// INSTRUCTOR CRUD FUNCTIONS - SUBJECTS
+// =========================
+
+/**
+ * Add a new subject to Firestore (Instructor only)
+ */
+export async function addSubject(subjectData) {
+    const userData = JSON.parse(localStorage.getItem("userData"));
+    if (!userData || (userData.role !== "instructor")) {
+        throw new Error("Only instructors can add subjects");
+    }
+
+    const subjectRef = await addDoc(collection(db, "subjects"), {
+        ...subjectData,
+        instructorId: userData.id,
+        createdAt: serverTimestamp()
+    });
+
+    return subjectRef.id;
+}
+
+/**
+ * Update a subject in Firestore (Instructor only)
+ */
+export async function updateSubject(subjectId, subjectData) {
+    const userData = JSON.parse(localStorage.getItem("userData"));
+    if (!userData || (userData.role !== "instructor")) {
+        throw new Error("Only instructors can update subjects");
+    }
+
+    await updateDoc(doc(db, "subjects", subjectId), {
+        ...subjectData,
+        updatedAt: serverTimestamp()
+    });
+}
+
+/**
+ * Delete a subject from Firestore (Instructor only)
+ */
+export async function deleteSubject(subjectId) {
+    const userData = JSON.parse(localStorage.getItem("userData"));
+    if (!userData || (userData.role !== "instructor")) {
+        throw new Error("Only instructors can delete subjects");
+    }
+
+    await deleteDoc(doc(db, "subjects", subjectId));
+}
+
+/**
+ * Get all subjects
+ */
+export async function getAllSubjects() {
+    const subjects = [];
+    const querySnapshot = await getDocs(collection(db, "subjects"));
+    querySnapshot.forEach(doc => {
+        subjects.push({ id: doc.id, ...doc.data() });
+    });
+    return subjects;
+}
+
+// =========================
+// INSTRUCTOR CRUD FUNCTIONS - TASKS
+// =========================
+
+/**
+ * Add a new task to Firestore (Instructor only)
+ */
+export async function addTask(subjectId, taskData) {
+    const userData = JSON.parse(localStorage.getItem("userData"));
+    if (!userData || (userData.role !== "instructor")) {
+        throw new Error("Only instructors can add tasks");
+    }
+
+    const taskRef = await addDoc(collection(db, "subjects", subjectId, "tasks"), {
+        ...taskData,
+        instructorId: userData.id,
+        createdAt: serverTimestamp()
+    });
+
+    return taskRef.id;
+}
+
+/**
+ * Update a task in Firestore (Instructor only)
+ */
+export async function updateTask(subjectId, taskId, taskData) {
+    const userData = JSON.parse(localStorage.getItem("userData"));
+    if (!userData || (userData.role !== "instructor")) {
+        throw new Error("Only instructors can update tasks");
+    }
+
+    await updateDoc(doc(db, "subjects", subjectId, "tasks", taskId), {
+        ...taskData,
+        updatedAt: serverTimestamp()
+    });
+}
+
+/**
+ * Delete a task from Firestore (Instructor only)
+ */
+export async function deleteTask(subjectId, taskId) {
+    const userData = JSON.parse(localStorage.getItem("userData"));
+    if (!userData || (userData.role !== "instructor")) {
+        throw new Error("Only instructors can delete tasks");
+    }
+
+    await deleteDoc(doc(db, "subjects", subjectId, "tasks", taskId));
+}
+
+/**
+ * Get all tasks for a subject
+ */
+export async function getTasksBySubject(subjectId) {
+    const tasks = [];
+    const querySnapshot = await getDocs(collection(db, "subjects", subjectId, "tasks"));
+    querySnapshot.forEach(doc => {
+        tasks.push({ id: doc.id, ...doc.data() });
+    });
+    return tasks;
+}
+
+// =========================
+// STUDENT SUBMISSION FUNCTIONS
+// =========================
+
+/**
+ * Submit an assignment (Student only)
+ * @param {string} taskId - The task ID
+ * @param {string} fileUrl - The Supabase file URL
+ * @param {string} fileName - The original file name
+ * @param {string} subjectId - The subject ID
+ */
+export async function submitAssignment(taskId, fileUrl, fileName, subjectId) {
+    const userData = JSON.parse(localStorage.getItem("userData"));
+    if (!userData || (userData.role !== "student")) {
+        throw new Error("Only students can submit assignments");
+    }
+
+    const submissionRef = await addDoc(collection(db, "tasks", taskId, "submissions"), {
+        studentId: userData.id,
+        studentName: userData.name,
+        fileUrl: fileUrl,
+        fileName: fileName,
+        subjectId: subjectId,
+        submittedAt: serverTimestamp()
+    });
+
+    return submissionRef.id;
+}
+
+/**
+ * Get student submissions for a task (Instructor: all, Student: own only)
+ */
+export async function getSubmissions(taskId) {
+    const userData = JSON.parse(localStorage.getItem("userData"));
+    if (!userData) throw new Error("User not logged in");
+
+    const submissions = [];
+    let q;
+
+    if (userData.role === "instructor") {
+        // Instructor sees all submissions
+        q = query(collection(db, "tasks", taskId, "submissions"));
+    } else {
+        // Student sees only their own submissions
+        q = query(collection(db, "tasks", taskId, "submissions"), 
+                 where("studentId", "==", userData.id));
+    }
+
+    const querySnapshot = await getDocs(q);
+    querySnapshot.forEach(doc => {
+        submissions.push({ id: doc.id, ...doc.data() });
+    });
+    return submissions;
+}
+
+// =========================
+// ANNOUNCEMENT FUNCTIONS (Instructor only)
+// =========================
+
+/**
+ * Post an announcement (Instructor only)
+ */
+export async function postAnnouncement(announcementData) {
+    const userData = JSON.parse(localStorage.getItem("userData"));
+    if (!userData || (userData.role !== "instructor")) {
+        throw new Error("Only instructors can post announcements");
+    }
+
+    const announcementRef = await addDoc(collection(db, "announcements"), {
+        ...announcementData,
+        instructorId: userData.id,
+        instructorName: userData.name,
+        createdAt: serverTimestamp()
+    });
+
+    return announcementRef.id;
+}
+
+/**
+ * Get all announcements
+ */
+export async function getAllAnnouncements() {
+    const announcements = [];
+    const querySnapshot = await getDocs(query(collection(db, "announcements"), 
+                                              where("published", "==", true)));
+    querySnapshot.forEach(doc => {
+        announcements.push({ id: doc.id, ...doc.data() });
+    });
+    return announcements;
+}
+
+// =========================
+// INITIALIZE EVERYTHING ON DOM
+// =========================
+document.addEventListener("DOMContentLoaded", async () => {
+    initializeTheme();
+    initializeLogin();
+    initializeSignup();
+    initializePasswordToggles();
+    initializeDashboard();
+    initializeHelp();
+    await initializeSubjects();
+    initializeProfile();
+    initializeGradesTable();
+    initializeGradesFilter();
+
+    // THEME BUTTONS FOR MULTIPLE PAGES
+    document.getElementById("darkModeBtn")?.addEventListener("click", () => applyTheme("dark"));
+    document.getElementById("lightModeBtn")?.addEventListener("click", () => applyTheme("light"));
+    document.getElementById("darkThemeBtn")?.addEventListener("click", () => applyTheme("dark"));
+    document.getElementById("lightThemeBtn")?.addEventListener("click", () => applyTheme("light"));
+    document.getElementById("logoutBtn")?.addEventListener("click", logout);
+});
+
+// =========================
+// EXPORT LOGOUT & THEME
+// =========================
+export { 
+    logout, 
+    applyTheme,
+    getUserRole,
+    isInstructor,
+    isStudent,
+    addSubject,
+    updateSubject,
+    deleteSubject,
+    getAllSubjects,
+    addTask,
+    updateTask,
+    deleteTask,
+    getTasksBySubject,
+    submitAssignment,
+    getSubmissions,
+    postAnnouncement,
+    getAllAnnouncements
+};
