@@ -813,4 +813,5 @@ document.addEventListener("DOMContentLoaded", () => {
     initializePasswordToggles();
     initializeDashboard();
     initializeHelp();
+    initializeSubjects();
 });
