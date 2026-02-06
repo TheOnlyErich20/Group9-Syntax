@@ -3,55 +3,9 @@
 // =========================
 import { auth } from './firebase.js';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, addDoc, updateDoc, deleteDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 const db = getFirestore();
-
-// =========================
-// ROLE CHECKING FUNCTIONS
-// =========================
-
-/**
- * Get user role from Firestore
- * @param {string} userId - The user ID
- * @returns {Promise<string|null>} - 'instructor', 'student', or null
- */
-export async function getUserRole(userId) {
-    try {
-        const userDoc = await getDoc(doc(db, "users", userId));
-        if (userDoc.exists()) {
-            return userDoc.data().role || "student";
-        }
-        return null;
-    } catch (error) {
-        console.error("Error getting user role:", error);
-        return null;
-    }
-}
-
-/**
- * Check if current user is instructor
- * @returns {Promise<boolean>}
- */
-export async function isInstructor() {
-    const userData = JSON.parse(localStorage.getItem("userData"));
-    if (!userData) return false;
-    
-    const role = await getUserRole(userData.id);
-    return role === "instructor";
-}
-
-/**
- * Check if current user is student
- * @returns {Promise<boolean>}
- */
-export async function isStudent() {
-    const userData = JSON.parse(localStorage.getItem("userData"));
-    if (!userData) return false;
-    
-    const role = await getUserRole(userData.id);
-    return role === "student";
-}
 
 // =========================
 // THEME TOGGLE
@@ -115,20 +69,9 @@ function initializeLogin() {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
-            // Get user role from Firestore
-            const userDoc = await getDoc(doc(db, "users", user.uid));
-            let userRole = "student";
-            if (userDoc.exists()) {
-                userRole = userDoc.data().role || "student";
-            }
-
             // Store logged-in user in localStorage
             localStorage.setItem("isLoggedIn", "true");
-            localStorage.setItem("userData", JSON.stringify({ 
-                id: user.uid, 
-                name: user.displayName || email,
-                role: userRole
-            }));
+            localStorage.setItem("userData", JSON.stringify({ id: user.uid, name: user.displayName || email }));
 
             setMessage("loginSuccess", "Login successful! Redirecting...", true);
             setTimeout(() => location.href = "index.html", 1200);
@@ -153,7 +96,6 @@ function initializeSignup() {
         const confirmPassword = document.getElementById("confirmPassword").value;
         const phone = document.getElementById("phone").value.trim();
         const course = document.getElementById("course").value.trim();
-        const role = document.getElementById("userRole").value || "student";
 
         if (!fullName || !email || !password || !confirmPassword || !course) {
             setMessage("signupMessage", "Please fill in all required fields");
@@ -176,12 +118,12 @@ function initializeSignup() {
 
             await updateProfile(user, { displayName: fullName });
 
-            await setDoc(doc(db, "users", user.uid), {
+            await setDoc(doc(db, "students", user.uid), {
                 fullName,
                 email,
                 phone,
                 course,
-                role: role,
+                role: "student",
                 createdAt: serverTimestamp()
             });
 
@@ -222,11 +164,9 @@ function initializeDashboard() {
     const userNameEl = document.getElementById("headerUserName");
     const dashboardNameEl = document.getElementById("dashboardUserName");
     const greetingEl = document.getElementById("greetingMessage");
-    const userRoleEl = document.getElementById("userRoleDisplay");
 
     if (userNameEl) userNameEl.textContent = userData.name;
     if (dashboardNameEl) dashboardNameEl.textContent = userData.name.split(" ")[0];
-    if (userRoleEl) userRoleEl.textContent = (userData.role || "student").toUpperCase();
 
     if (greetingEl) {
         const hour = new Date().getHours();
@@ -234,9 +174,6 @@ function initializeDashboard() {
                                  hour < 17 ? "Good afternoon ☀️" :
                                              "Good evening 🌙";
     }
-
-    // Apply role-based UI restrictions
-    applyRoleBasedUI();
 }
 
 // =========================
@@ -288,7 +225,7 @@ function initializeHelp() {
 // =========================
 // SUBJECTS PAGE FUNCTIONALITY
 // =========================
-async function initializeSubjects() {
+function initializeSubjects() {
     const listContainer = document.getElementById('subjectsList');
     const detailsContainer = document.getElementById('subjectDetailsPanel');
     const addBtn = document.getElementById('addSubjectBtn');
@@ -297,21 +234,12 @@ async function initializeSubjects() {
 
     if (!listContainer || !detailsContainer) return;
 
-    // Get user role
-    const userData = JSON.parse(localStorage.getItem("userData"));
-    const isInstructor = userData?.role === "instructor";
-
-    // Load subjects from Firestore
-    let subjects = await getAllSubjects();
-    
-    // Fallback to dummy data if no subjects in Firestore
-    if (subjects.length === 0) {
-        subjects = [
-            { name: "Mathematics", teacher: "Mr. Anderson", time: "08:00 AM - 09:30 AM", description: "Advanced Calculus and Algebra" },
-            { name: "Physics", teacher: "Ms. Curie", time: "10:00 AM - 11:30 AM", description: "Fundamentals of Physics" },
-            { name: "Computer Science", teacher: "Mr. Turing", time: "01:00 PM - 02:30 PM", description: "Algorithms and Data Structures" }
-        ];
-    }
+    // Dummy data for demonstration
+    let subjects = [
+        { name: "Mathematics", teacher: "Mr. Anderson", time: "08:00 AM - 09:30 AM", description: "Advanced Calculus and Algebra" },
+        { name: "Physics", teacher: "Ms. Curie", time: "10:00 AM - 11:30 AM", description: "Fundamentals of Physics" },
+        { name: "Computer Science", teacher: "Mr. Turing", time: "01:00 PM - 02:30 PM", description: "Algorithms and Data Structures" }
+    ];
 
     // Dummy lessons data
     const dummyLessons = [
@@ -326,7 +254,7 @@ async function initializeSubjects() {
     // -------------------------
     function renderSubjects() {
         listContainer.innerHTML = subjects.map((sub, index) => `
-            <div class="subject-list-item" data-id="${sub.id}" data-index="${index}">
+            <div class="subject-list-item" data-index="${index}">
                 <h4>${sub.name}</h4>
                 <p><i class="fas fa-chalkboard-teacher"></i> ${sub.teacher}</p>
             </div>
@@ -380,16 +308,11 @@ async function initializeSubjects() {
     }
 
     // -------------------------
-    // OPEN ADD MODAL (Instructor only)
+    // OPEN ADD MODAL
     // -------------------------
-    if (isInstructor) {
-        addBtn?.addEventListener('click', () => {
-            addModal.style.display = 'block';
-        });
-    } else {
-        // Hide add button for non-instructors
-        addBtn?.style.display = 'none';
-    }
+    addBtn?.addEventListener('click', () => {
+        addModal.style.display = 'block';
+    });
 
     // -------------------------
     // CLOSE MODALS
@@ -405,40 +328,24 @@ async function initializeSubjects() {
     });
 
     // -------------------------
-    // ADD SUBJECT (FORM - Instructor only)
+    // ADD SUBJECT (FORM)
     // -------------------------
-    if (isInstructor) {
-        addForm?.addEventListener('submit', async e => {
-            e.preventDefault();
+    addForm?.addEventListener('submit', e => {
+        e.preventDefault();
 
-            const subject = {
-                name: document.getElementById('newSubjectName').value.trim(),
-                teacher: document.getElementById('newTeacherName').value.trim(),
-                time: document.getElementById('newSubjectTime').value.trim(),
-                description: document.getElementById('newSubjectDescription').value.trim()
-            };
+        const subject = {
+            name: document.getElementById('newSubjectName').value.trim(),
+            teacher: document.getElementById('newTeacherName').value.trim(),
+            time: document.getElementById('newSubjectTime').value.trim(),
+            description: document.getElementById('newSubjectDescription').value.trim()
+        };
 
-            try {
-                // Save to Firestore
-                const subjectId = await addSubject(subject);
-                
-                // Add to local array with ID
-                subjects.push({ id: subjectId, ...subject });
-                renderSubjects();
+        subjects.push(subject);
+        renderSubjects();
 
-                addForm.reset();
-                addModal.style.display = 'none';
-            } catch (error) {
-                console.error("Error adding subject:", error);
-                alert("Error adding subject: " + error.message);
-            }
-        });
-    } else {
-        // Disable form for non-instructors
-        addForm?.querySelectorAll('input, textarea').forEach(el => {
-            el.disabled = true;
-        });
-    }
+        addForm.reset();
+        addModal.style.display = 'none';
+    });
 
     // Initial Render
     renderSubjects();
@@ -522,4 +429,89 @@ function initializeProfile() {
 
 function updateProfileUI(data) {
     if(data.fullName) {
-        document.getElementById('fullName').textCont
+        document.getElementById('fullName').textContent = data.fullName;
+        const displayName = document.getElementById('displayName');
+        if(displayName) displayName.textContent = data.fullName;
+    }
+    if(data.email) {
+        document.getElementById('infoEmail').textContent = data.email;
+        const displayEmail = document.getElementById('displayEmail');
+        if(displayEmail) displayEmail.textContent = data.email;
+    }
+    if(data.phone) document.getElementById('infoPhone').textContent = data.phone;
+    if(data.dob) document.getElementById('infoDOB').textContent = data.dob;
+    if(data.gender) document.getElementById('infoGender').textContent = data.gender;
+}
+
+// =========================
+// GRADES PAGE FUNCTIONALITY
+// =========================
+function initializeGradesTable() {
+    const rows = document.querySelectorAll('.grades-table .table-row');
+    
+    rows.forEach(row => {
+        row.addEventListener('click', () => {
+            // Close other rows (accordion style)
+            rows.forEach(r => {
+                if (r !== row) r.classList.remove('active');
+            });
+            row.classList.toggle('active');
+        });
+    });
+}
+
+function initializeGradesFilter() {
+    const controls = document.querySelector('.grades-controls');
+    if (!controls) return;
+
+    const table = document.querySelector('.grades-table');
+    if (!table) return;
+
+    const buttons = controls.querySelectorAll('button[data-term]');
+
+    buttons.forEach(button => {
+        button.addEventListener('click', () => {
+            // Update active button
+            buttons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+
+            const term = button.dataset.term;
+
+            // Remove all term-specific classes from the table
+            table.classList.remove('show-prelim', 'show-midterm', 'show-final');
+
+            // Add the specific class if not 'all'
+            if (term !== 'all') {
+                table.classList.add(`show-${term}`);
+            }
+        });
+    });
+}
+
+// =========================
+// INITIALIZE EVERYTHING ON DOM
+// =========================
+document.addEventListener("DOMContentLoaded", () => {
+    initializeTheme();
+    initializeLogin();
+    initializeSignup();
+    initializePasswordToggles();
+    initializeDashboard();
+    initializeHelp();
+    initializeSubjects();
+    initializeProfile();
+    initializeGradesTable();
+    initializeGradesFilter();
+
+    // THEME BUTTONS FOR MULTIPLE PAGES
+    document.getElementById("darkModeBtn")?.addEventListener("click", () => applyTheme("dark"));
+    document.getElementById("lightModeBtn")?.addEventListener("click", () => applyTheme("light"));
+    document.getElementById("darkThemeBtn")?.addEventListener("click", () => applyTheme("dark"));
+    document.getElementById("lightThemeBtn")?.addEventListener("click", () => applyTheme("light"));
+    document.getElementById("logoutBtn")?.addEventListener("click", logout);
+});
+
+// =========================
+// EXPORT LOGOUT & THEME
+// =========================
+export { logout, applyTheme };
