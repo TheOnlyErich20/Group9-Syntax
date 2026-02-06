@@ -45,8 +45,6 @@ export {
     collection, 
     addDoc, 
     getDocs, 
-    query, 
-    orderBy, 
     where, 
     doc, 
     updateDoc, 
