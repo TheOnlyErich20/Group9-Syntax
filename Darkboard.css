@@ -1179,7 +1179,8 @@ section{
 }
 
 .form-group input,
-.form-group select {
+.form-group select,
+.form-group textarea {
     width: 100%;
     padding: 12px 15px;
     background: rgba(255, 255, 255, 0.05);
@@ -1190,12 +1191,19 @@ section{
     transition: 0.3s ease;
 }
 
+.form-group textarea {
+    resize: vertical;
+    min-height: 150px;
+    font-family: inherit;
+}
+
 .form-group input::placeholder {
     color: rgba(255, 255, 255, 0.5);
 }
 
 .form-group input:focus,
-.form-group select:focus {
+.form-group select:focus,
+.form-group textarea:focus {
     outline: none;
     background: rgba(255, 255, 255, 0.08);
     border-color: #00d4ff;
@@ -3599,6 +3607,13 @@ body.light-mode .btn-submit {
 
 .detail-meta i {
     color: var(--accent);
+}
+
+.detail-description {
+    margin-top: 20px;
+    color: var(--text-secondary);
+    font-size: 1.2em;
+    line-height: 1.6;
 }
 
 /* Lessons List Styles */
