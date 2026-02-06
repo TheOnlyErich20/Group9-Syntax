@@ -54,7 +54,13 @@
             <span>Announcements</span>
           </a>
 
-          <hr />
+          <hr
+            style="
+              border: 0;
+              border-top: 1px solid rgba(255, 255, 255, 0.1);
+              margin: 10px 0;
+            "
+          />
 
           <a href="Profile.html" class="nav-item">
             <i class="fas fa-user"></i>
@@ -86,13 +92,31 @@
             <p>Track your school subjects and grades</p>
           </div>
 
-          <div class="add-subject">
-            <button id="addSubjectBtn" class="btn-add-subject">
-              <i class="fas fa-plus"></i> Add New Subject
-            </button>
+          <!-- New Split Layout -->
+          <div class="subjects-content-wrapper">
+            <!-- Left Sidebar: List -->
+            <div class="subjects-sidebar">
+              <div class="sidebar-header">
+                <h3>Subject List</h3>
+                <button id="addSubjectBtn" class="btn-add-mini" title="Add Subject">
+                  <i class="fas fa-plus"></i>
+                </button>
+              </div>
+              <div class="subjects-list" id="subjectsList">
+                <!-- List items will be injected here -->
+              </div>
+            </div>
+
+            <!-- Right Panel: Details -->
+            <div class="subject-details" id="subjectDetailsPanel">
+              <div class="empty-state">
+                <i class="fas fa-book-open"></i>
+                <p>Select a subject from the list to view details and lessons.</p>
+              </div>
+            </div>
           </div>
 
-          <!-- Add Subject Modal -->
+          <!-- Add Subject Modal (Kept) -->
           <div class="modal" id="addSubjectModal">
             <div class="modal-content">
               <span class="close">&times;</span>
@@ -101,17 +125,25 @@
                 <h2>Add New Subject</h2>
 
                 <form id="addSubjectForm">
-                  <label>Subject Name</label>
-                  <input type="text" id="newSubjectName" required />
+                  <div class="form-group">
+                    <label>Subject Name</label>
+                    <input type="text" id="newSubjectName" required placeholder="e.g. Mathematics" />
+                  </div>
 
-                  <label>Teacher</label>
-                  <input type="text" id="newTeacherName" required />
+                  <div class="form-group">
+                    <label>Teacher</label>
+                    <input type="text" id="newTeacherName" required placeholder="e.g. Mr. Anderson" />
+                  </div>
 
-                  <label>Time</label>
-                  <input type="text" id="newSubjectTime" required />
+                  <div class="form-group">
+                    <label>Time</label>
+                    <input type="text" id="newSubjectTime" required placeholder="e.g. 08:00 AM - 09:30 AM" />
+                  </div>
                   
-                  <label>Description</label>
-                  <textarea id="newSubjectDescription"></textarea>
+                  <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="newSubjectDescription" rows="3" placeholder="Brief description of the subject..."></textarea>
+                  </div>
 
                   <button type="submit" class="btn-add-subject">
                     <i class="fas fa-check"></i> Save Subject
@@ -120,27 +152,7 @@
               </div>
             </div>
           </div>
-
-          <div class="subjects-container"></div>
         </section>
-
-        <!-- Subject Detail Modal -->
-        <div class="modal" id="subjectModal">
-          <div class="modal-content">
-            <span class="close">&times;</span>
-
-            <div class="modal-body">
-              <h2 id="modalTitle"></h2>
-
-              <p><strong>Teacher:</strong> <span id="modalTeacher"></span></p>
-              <p><strong>Time:</strong> <span id="modalTime"></span></p>
-              <p><strong>Grade:</strong> <span id="modalGrade"></span></p>
-              <p><strong>Description:</strong> <span id="modalDescription"></span></p>
-
-              <button class="btn-edit">Edit Subject</button>
-            </div>
-          </div>
-        </div>
       </main>
     </div>
 
