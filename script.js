@@ -108,10 +108,59 @@ async function initializeSubjects() {
     let subjects = [];
     let currentSubjectIndex = null;
     let currentSubjectId = null;
-    let currentTaskId = null;
-    let unsubscribeSnapshot = null;
+    let unsubscribeTasks = null;
+    let unsubscribeSubmissions = null;
 
-    // Load subjects from Firestore
+    // =========================
+    // REALTIME SUBSCRIPTION (Optimized)
+    // =========================
+    function startRealtimeForSubject(subjectId) {
+        // Stop existing subscriptions first
+        stopRealtime();
+
+        if (!subjectId) return;
+
+        // Listen for task changes (only when viewing a subject)
+        const tasksQuery = query(collection(db, "tasks"), where("subjectId", "==", subjectId));
+        unsubscribeTasks = onSnapshot(tasksQuery, (snapshot) => {
+            // Only re-render if we're still on the same subject
+            if (currentSubjectId === subjectId && currentSubjectIndex !== null) {
+                renderSubjectDetails(currentSubjectIndex, false); // false = don't reload subjects list
+            }
+        }, (error) => {
+            console.error("Task snapshot error:", error);
+        });
+
+        // For students: listen for their own submissions
+        if (!isInstructor) {
+            const submissionsQuery = query(
+                collection(db, "submissions"),
+                where("studentId", "==", userData.id)
+            );
+            unsubscribeSubmissions = onSnapshot(submissionsQuery, (snapshot) => {
+                if (currentSubjectId === subjectId && currentSubjectIndex !== null) {
+                    renderSubjectDetails(currentSubjectIndex, false);
+                }
+            }, (error) => {
+                console.error("Submission snapshot error:", error);
+            });
+        }
+    }
+
+    function stopRealtime() {
+        if (unsubscribeTasks) {
+            unsubscribeTasks();
+            unsubscribeTasks = null;
+        }
+        if (unsubscribeSubmissions) {
+            unsubscribeSubmissions();
+            unsubscribeSubmissions = null;
+        }
+    }
+
+    // =========================
+    // LOAD SUBJECTS (Only once on init)
+    // =========================
     async function loadSubjects() {
         try {
             let q;
@@ -130,27 +179,6 @@ async function initializeSubjects() {
         } catch (err) {
             console.error("Error loading subjects:", err);
         }
-    }
-
-    // =========================
-    // REALTIME SUBSCRIPTIONS
-    // =========================
-    function startRealtimeListeners(subjectId) {
-        // Stop any existing subscription
-        if (unsubscribeSnapshot) {
-            unsubscribeSnapshot();
-            unsubscribeSnapshot = null;
-        }
-
-        if (!subjectId) return;
-
-        // Listen for task changes
-        const tasksQuery = query(collection(db, "tasks"), where("subjectId", "==", subjectId));
-        unsubscribeSnapshot = onSnapshot(tasksQuery, (snapshot) => {
-            if (currentSubjectIndex !== null && subjects[currentSubjectIndex]?.id === subjectId) {
-                renderSubjectDetails(currentSubjectIndex);
-            }
-        });
     }
 
     // =========================
@@ -180,8 +208,7 @@ async function initializeSubjects() {
                 item.classList.add('active');
                 currentSubjectIndex = item.dataset.index;
                 currentSubjectId = item.dataset.id;
-                renderSubjectDetails(item.dataset.index);
-                startRealtimeListeners(item.dataset.id);
+                renderSubjectDetails(item.dataset.index, true); // true = start realtime
             });
         });
     }
@@ -189,11 +216,16 @@ async function initializeSubjects() {
     // =========================
     // RENDER DETAILS
     // =========================
-    async function renderSubjectDetails(index) {
+    async function renderSubjectDetails(index, startRealtime = false) {
         const sub = subjects[index];
         if (!sub) return;
 
         currentSubjectId = sub.id;
+
+        // Start realtime only when explicitly requested
+        if (startRealtime) {
+            startRealtimeForSubject(sub.id);
+        }
 
         // Load tasks for this subject
         let tasks = [];
@@ -476,8 +508,8 @@ async function initializeSubjects() {
             }
             
             subjects = subjects.filter(s => s.id !== subjectId);
+            stopRealtime();
             renderSubjects();
-            startRealtimeListeners(null);
             detailsContainer.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-book-open"></i>
@@ -785,6 +817,9 @@ async function initializeSubjects() {
             e.target.style.display = 'none';
         }
     });
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', stopRealtime);
 
     // Initial Load
     await loadSubjects();
