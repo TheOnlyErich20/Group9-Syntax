@@ -3,9 +3,19 @@
 // =========================
 import { auth } from './firebase.js';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, addDoc, query, where, getDocs, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 const db = getFirestore();
+
+// =========================
+// INSTRUCTOR ACCESS CODES
+// =========================
+// Add your approved access codes here
+const INSTRUCTOR_ACCESS_CODES = {
+    "INSTRUCTOR2024": true,
+    "TEACHER123": true,
+    "SCHOOLADMIN": true
+};
 
 // =========================
 // THEME TOGGLE
@@ -51,6 +61,41 @@ function setMessage(id, msg, success = false) {
 }
 
 // =========================
+// ROLE SELECTION TOGGLE
+// =========================
+function initializeRoleSelection() {
+    const roleOptions = document.querySelectorAll('.role-option');
+    const studentBenefits = document.querySelector('.student-benefits');
+    const instructorBenefits = document.querySelector('.instructor-benefits');
+    const accessCodeGroup = document.getElementById('accessCodeGroup');
+
+    roleOptions.forEach(option => {
+        option.addEventListener('click', () => {
+            // Remove active from all
+            roleOptions.forEach(opt => opt.classList.remove('active'));
+            // Add active to clicked
+            option.classList.add('active');
+            
+            // Update radio button
+            const radio = option.querySelector('input[type="radio"]');
+            radio.checked = true;
+
+            // Show/hide benefits
+            const role = radio.value;
+            if (role === 'instructor') {
+                if (studentBenefits) studentBenefits.style.display = 'none';
+                if (instructorBenefits) instructorBenefits.style.display = 'block';
+                if (accessCodeGroup) accessCodeGroup.style.display = 'block';
+            } else {
+                if (studentBenefits) studentBenefits.style.display = 'block';
+                if (instructorBenefits) instructorBenefits.style.display = 'none';
+                if (accessCodeGroup) accessCodeGroup.style.display = 'none';
+            }
+        });
+    });
+}
+
+// =========================
 // LOGIN FUNCTIONALITY
 // =========================
 function initializeLogin() {
@@ -69,9 +114,32 @@ function initializeLogin() {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
+            // Get user role from Firestore
+            let userRole = 'student';
+            let userName = user.displayName || email;
+
+            // Check students collection
+            const studentDoc = await getDoc(doc(db, "students", user.uid));
+            if (studentDoc.exists()) {
+                userRole = studentDoc.data().role || 'student';
+                userName = studentDoc.data().fullName || userName;
+            } else {
+                // Check instructors collection
+                const instructorDoc = await getDoc(doc(db, "instructors", user.uid));
+                if (instructorDoc.exists()) {
+                    userRole = 'instructor';
+                    userName = instructorDoc.data().fullName || userName;
+                }
+            }
+
             // Store logged-in user in localStorage
             localStorage.setItem("isLoggedIn", "true");
-            localStorage.setItem("userData", JSON.stringify({ id: user.uid, name: user.displayName || email }));
+            localStorage.setItem("userData", JSON.stringify({ 
+                id: user.uid, 
+                name: userName,
+                email: email,
+                role: userRole 
+            }));
 
             setMessage("loginSuccess", "Login successful! Redirecting...", true);
             setTimeout(() => location.href = "index.html", 1200);
@@ -96,6 +164,8 @@ function initializeSignup() {
         const confirmPassword = document.getElementById("confirmPassword").value;
         const phone = document.getElementById("phone").value.trim();
         const course = document.getElementById("course").value.trim();
+        const role = document.querySelector('input[name="role"]:checked').value;
+        const accessCode = document.getElementById("accessCode")?.value.trim() || "";
 
         if (!fullName || !email || !password || !confirmPassword || !course) {
             setMessage("signupMessage", "Please fill in all required fields");
@@ -112,18 +182,49 @@ function initializeSignup() {
             return;
         }
 
+        // Validate instructor access code
+        if (role === "instructor") {
+            if (!accessCode) {
+                setMessage("signupMessage", "Access code is required for instructor accounts");
+                return;
+            }
+            if (!INSTRUCTOR_ACCESS_CODES[accessCode]) {
+                setMessage("signupMessage", "Invalid access code. Please contact admin.");
+                return;
+            }
+        }
+
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
             await updateProfile(user, { displayName: fullName });
 
-            await setDoc(doc(db, "students", user.uid), {
+            // Save user data based on role
+            const userData = {
                 fullName,
                 email,
                 phone,
                 course,
-                role: "student",
+                role: role,
+                createdAt: serverTimestamp()
+            };
+
+            if (role === "student") {
+                await setDoc(doc(db, "students", user.uid), userData);
+            } else if (role === "instructor") {
+                await setDoc(doc(db, "instructors", user.uid), {
+                    ...userData,
+                    accessCode: accessCode, // Store for verification
+                    subjects: [] // Will hold subject IDs
+                });
+            }
+
+            // Also save to users collection for quick lookup
+            await setDoc(doc(db, "users", user.uid), {
+                fullName,
+                email,
+                role,
                 createdAt: serverTimestamp()
             });
 
@@ -225,7 +326,7 @@ function initializeHelp() {
 // =========================
 // SUBJECTS PAGE FUNCTIONALITY
 // =========================
-function initializeSubjects() {
+async function initializeSubjects() {
     const listContainer = document.getElementById('subjectsList');
     const detailsContainer = document.getElementById('subjectDetailsPanel');
     const addBtn = document.getElementById('addSubjectBtn');
@@ -234,12 +335,53 @@ function initializeSubjects() {
 
     if (!listContainer || !detailsContainer) return;
 
-    // Dummy data for demonstration
-    let subjects = [
-        { name: "Mathematics", teacher: "Mr. Anderson", time: "08:00 AM - 09:30 AM", description: "Advanced Calculus and Algebra" },
-        { name: "Physics", teacher: "Ms. Curie", time: "10:00 AM - 11:30 AM", description: "Fundamentals of Physics" },
-        { name: "Computer Science", teacher: "Mr. Turing", time: "01:00 PM - 02:30 PM", description: "Algorithms and Data Structures" }
-    ];
+    // Get current user role
+    const userData = JSON.parse(localStorage.getItem("userData"));
+    const isInstructor = userData?.role === 'instructor';
+
+    // Show/hide add button based on role
+    if (addBtn) {
+        addBtn.style.display = isInstructor ? 'block' : 'none';
+    }
+
+    let subjects = [];
+
+    // Load subjects from Firestore
+    try {
+        if (isInstructor) {
+            // Load instructor's subjects
+            const instructorDoc = await getDoc(doc(db, "instructors", userData.id));
+            if (instructorDoc.exists()) {
+                const subjectIds = instructorDoc.data().subjects || [];
+                for (const subId of subjectIds) {
+                    const subDoc = await getDoc(doc(db, "subjects", subId));
+                    if (subDoc.exists()) {
+                        subjects.push({ id: subDoc.id, ...subDoc.data() });
+                    }
+                }
+            }
+        } else {
+            // Load student's enrolled subjects
+            const studentDoc = await getDoc(doc(db, "students", userData.id));
+            if (studentDoc.exists()) {
+                const enrolledSubjectIds = studentDoc.data().enrolledSubjects || [];
+                for (const subId of enrolledSubjectIds) {
+                    const subDoc = await getDoc(doc(db, "subjects", subId));
+                    if (subDoc.exists()) {
+                        subjects.push({ id: subDoc.id, ...subDoc.data() });
+                    }
+                }
+            }
+        }
+    } catch (err) {
+        console.error("Error loading subjects:", err);
+        // Fallback to dummy data if Firestore fails
+        subjects = [
+            { name: "Mathematics", teacher: "Mr. Anderson", time: "08:00 AM - 09:30 AM", description: "Advanced Calculus and Algebra" },
+            { name: "Physics", teacher: "Ms. Curie", time: "10:00 AM - 11:30 AM", description: "Fundamentals of Physics" },
+            { name: "Computer Science", teacher: "Mr. Turing", time: "01:00 PM - 02:30 PM", description: "Algorithms and Data Structures" }
+        ];
+    }
 
     // Dummy lessons data
     const dummyLessons = [
@@ -249,74 +391,152 @@ function initializeSubjects() {
         { title: "Midterm Review", duration: "2 hrs", status: "Locked" }
     ];
 
-    // -------------------------
+    // =========================
     // RENDER SUBJECTS
-    // -------------------------
+    // =========================
     function renderSubjects() {
+        if (subjects.length === 0) {
+            listContainer.innerHTML = `
+                <div class="empty-state" style="text-align: center; padding: 20px; color: #aaa;">
+                    <i class="fas fa-book"></i>
+                    <p>${isInstructor ? 'No subjects yet. Click + to add one.' : 'No subjects enrolled.'}</p>
+                </div>
+            `;
+            return;
+        }
+
         listContainer.innerHTML = subjects.map((sub, index) => `
             <div class="subject-list-item" data-index="${index}">
                 <h4>${sub.name}</h4>
-                <p><i class="fas fa-chalkboard-teacher"></i> ${sub.teacher}</p>
+                <p><i class="fas fa-chalkboard-teacher"></i> ${sub.teacher || 'TBA'}</p>
             </div>
         `).join('');
 
         // Add click listeners
         document.querySelectorAll('.subject-list-item').forEach(item => {
             item.addEventListener('click', () => {
-                // Remove active class from all
                 document.querySelectorAll('.subject-list-item').forEach(i => i.classList.remove('active'));
-                // Add active to clicked
                 item.classList.add('active');
-                // Show details
                 renderSubjectDetails(item.dataset.index);
             });
         });
     }
 
-    // -------------------------
+    // =========================
     // RENDER DETAILS
-    // -------------------------
+    // =========================
     function renderSubjectDetails(index) {
         const sub = subjects[index];
         if (!sub) return;
+
+        let lessonsHtml = '';
+        let tasksHtml = '';
+
+        // Generate lessons/tasks based on role
+        if (isInstructor) {
+            // Instructor sees task management
+            tasksHtml = `
+                <div class="tasks-container" style="margin-top: 20px;">
+                    <h3><i class="fas fa-tasks"></i> Tasks & Assignments</h3>
+                    <button class="btn-add-task" onclick="showAddTaskModal('${sub.id}')" style="margin-bottom: 15px;">
+                        <i class="fas fa-plus"></i> Add New Task
+                    </button>
+                    <div class="task-list">
+                        ${dummyLessons.map(lesson => `
+                            <div class="task-item" style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 10px;">
+                                <div>
+                                    <h4>${lesson.title}</h4>
+                                    <p style="font-size: 12px; color: #aaa;"><i class="fas fa-clock"></i> ${lesson.duration}</p>
+                                </div>
+                                <div class="task-actions">
+                                    <button class="btn-edit-task" style="background: rgba(59, 130, 246, 0.2); border: none; padding: 8px 12px; border-radius: 6px; color: #60a5fa; cursor: pointer; margin-right: 5px;">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn-delete-task" style="background: rgba(239, 68, 68, 0.2); border: none; padding: 8px 12px; border-radius: 6px; color: #f87171; cursor: pointer;">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="upload-section" style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px;">
+                    <h3><i class="fas fa-cloud-upload-alt"></i> Upload Materials</h3>
+                    <div style="margin-top: 10px;">
+                        <input type="file" id="fileUpload" style="display: none;" multiple />
+                        <button onclick="document.getElementById('fileUpload').click()" class="login-btn" style="width: auto; padding: 10px 20px;">
+                            <i class="fas fa-file-upload"></i> Select Files
+                        </button>
+                        <button class="login-btn" style="width: auto; padding: 10px 20px; background: #4ade80;">
+                            <i class="fas fa-cloud-upload-alt"></i> Upload to Supabase
+                        </button>
+                    </div>
+                    <p style="font-size: 12px; color: #aaa; margin-top: 10px;">
+                        Supported: PDF, DOC, DOCX, PPT, PPTX, Images, Videos
+                    </p>
+                </div>
+            `;
+        } else {
+            // Student sees lessons and can submit
+            tasksHtml = `
+                <div class="lessons-container">
+                    <h3><i class="fas fa-list-ul"></i> Lessons</h3>
+                    ${dummyLessons.map(lesson => `
+                        <div class="lesson-item">
+                            <div class="lesson-info">
+                                <h4>${lesson.title}</h4>
+                                <p><i class="fas fa-clock"></i> ${lesson.duration} • ${lesson.status}</p>
+                            </div>
+                            <button class="btn-start-lesson">
+                                ${lesson.status === 'Locked' ? '<i class="fas fa-lock"></i>' : '<i class="fas fa-play"></i> Start'}
+                            </button>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div class="submissions-section" style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px;">
+                    <h3><i class="fas fa-paper-plane"></i> Submit Assignment</h3>
+                    <div style="margin-top: 10px;">
+                        <input type="file" id="submissionFile" style="display: none;" />
+                        <button onclick="document.getElementById('submissionFile').click()" class="login-btn" style="width: auto; padding: 10px 20px;">
+                            <i class="fas fa-file-upload"></i> Select File
+                        </button>
+                        <button class="login-btn" style="width: auto; padding: 10px 20px; background: #4ade80;">
+                            <i class="fas fa-paper-plane"></i> Submit
+                        </button>
+                    </div>
+                    <p style="font-size: 12px; color: #aaa; margin-top: 10px;">
+                        Upload your assignment files here. Supported formats: PDF, DOC, DOCX, Images
+                    </p>
+                </div>
+            `;
+        }
 
         detailsContainer.innerHTML = `
             <div class="detail-header">
                 <h2>${sub.name}</h2>
                 <div class="detail-meta">
-                    <span><i class="fas fa-chalkboard-teacher"></i> ${sub.teacher}</span>
-                    <span><i class="fas fa-clock"></i> ${sub.time}</span>
+                    <span><i class="fas fa-chalkboard-teacher"></i> ${sub.teacher || 'TBA'}</span>
+                    <span><i class="fas fa-clock"></i> ${sub.time || 'TBA'}</span>
                 </div>
                 <p class="detail-description">${sub.description || "No description available."}</p>
             </div>
 
-            <div class="lessons-container">
-                <h3><i class="fas fa-list-ul"></i> Lessons</h3>
-                ${dummyLessons.map(lesson => `
-                    <div class="lesson-item">
-                        <div class="lesson-info">
-                            <h4>${lesson.title}</h4>
-                            <p><i class="fas fa-clock"></i> ${lesson.duration} • ${lesson.status}</p>
-                        </div>
-                        <button class="btn-start-lesson">
-                            ${lesson.status === 'Locked' ? '<i class="fas fa-lock"></i>' : '<i class="fas fa-play"></i> Start'}
-                        </button>
-                    </div>
-                `).join('')}
-            </div>
+            ${tasksHtml}
         `;
     }
 
-    // -------------------------
+    // =========================
     // OPEN ADD MODAL
-    // -------------------------
+    // =========================
     addBtn?.addEventListener('click', () => {
         addModal.style.display = 'block';
     });
 
-    // -------------------------
+    // =========================
     // CLOSE MODALS
-    // -------------------------
+    // =========================
     document.querySelectorAll('.modal .close').forEach(btn => {
         btn.addEventListener('click', () => {
             btn.closest('.modal').style.display = 'none';
@@ -327,24 +547,47 @@ function initializeSubjects() {
         if (e.target === addModal) addModal.style.display = 'none';
     });
 
-    // -------------------------
+    // =========================
     // ADD SUBJECT (FORM)
-    // -------------------------
-    addForm?.addEventListener('submit', e => {
+    // =========================
+    addForm?.addEventListener('submit', async e => {
         e.preventDefault();
 
-        const subject = {
+        const subjectData = {
             name: document.getElementById('newSubjectName').value.trim(),
             teacher: document.getElementById('newTeacherName').value.trim(),
             time: document.getElementById('newSubjectTime').value.trim(),
-            description: document.getElementById('newSubjectDescription').value.trim()
+            description: document.getElementById('newSubjectDescription').value.trim(),
+            instructorId: userData.id,
+            instructorName: userData.name,
+            createdAt: serverTimestamp()
         };
 
-        subjects.push(subject);
-        renderSubjects();
+        try {
+            // Add to subjects collection
+            const subjectRef = await addDoc(collection(db, "subjects"), subjectData);
+            const subjectId = subjectRef.id;
 
-        addForm.reset();
-        addModal.style.display = 'none';
+            // Update instructor's subjects array
+            const instructorRef = doc(db, "instructors", userData.id);
+            const instructorDoc = await getDoc(instructorRef);
+            if (instructorDoc.exists()) {
+                const currentSubjects = instructorDoc.data().subjects || [];
+                await updateDoc(instructorRef, {
+                    subjects: [...currentSubjects, subjectId]
+                });
+            }
+
+            // Add to local subjects array
+            subjects.push({ id: subjectId, ...subjectData });
+            renderSubjects();
+
+            addForm.reset();
+            addModal.style.display = 'none';
+        } catch (err) {
+            console.error("Error adding subject:", err);
+            alert("Error adding subject: " + err.message);
+        }
     });
 
     // Initial Render
@@ -419,9 +662,9 @@ function initializeProfile() {
         localStorage.setItem('userProfile', JSON.stringify(uiData));
         
         // Update main user data for dashboard greeting
-        const userData = JSON.parse(localStorage.getItem('userData')) || {};
+        const userData = JSON.parse(localStorage.getItem("userData")) || {};
         userData.name = newData.fullName;
-        localStorage.setItem('userData', JSON.stringify(userData));
+        localStorage.setItem("userData", JSON.stringify(userData));
 
         closeModal();
     });
@@ -489,29 +732,30 @@ function initializeGradesFilter() {
 }
 
 // =========================
+// SUPABASE UPLOAD FUNCTIONS
+// =========================
+// These functions will be used when you add Supabase SDK
+async function uploadToSupabase(file, bucket, folder) {
+    // This is a placeholder - actual implementation requires Supabase SDK
+    console.log("Uploading file:", file.name, "to", bucket, folder);
+    
+    // Example implementation with Supabase:
+    // const { data, error } = await supabase.storage
+    //     .from(bucket)
+    //     .upload(`${folder}${Date.now()}_${file.name}`, file);
+    
+    // return { data, error };
+}
+
+// =========================
 // INITIALIZE EVERYTHING ON DOM
 // =========================
 document.addEventListener("DOMContentLoaded", () => {
     initializeTheme();
+    initializeRoleSelection();
     initializeLogin();
     initializeSignup();
     initializePasswordToggles();
     initializeDashboard();
     initializeHelp();
-    initializeSubjects();
-    initializeProfile();
-    initializeGradesTable();
-    initializeGradesFilter();
-
-    // THEME BUTTONS FOR MULTIPLE PAGES
-    document.getElementById("darkModeBtn")?.addEventListener("click", () => applyTheme("dark"));
-    document.getElementById("lightModeBtn")?.addEventListener("click", () => applyTheme("light"));
-    document.getElementById("darkThemeBtn")?.addEventListener("click", () => applyTheme("dark"));
-    document.getElementById("lightThemeBtn")?.addEventListener("click", () => applyTheme("light"));
-    document.getElementById("logoutBtn")?.addEventListener("click", logout);
 });
-
-// =========================
-// EXPORT LOGOUT & THEME
-// =========================
-export { logout, applyTheme };
