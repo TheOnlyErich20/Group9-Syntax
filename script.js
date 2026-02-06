@@ -287,7 +287,7 @@ function initializeSubjects() {
                     <span><i class="fas fa-chalkboard-teacher"></i> ${sub.teacher}</span>
                     <span><i class="fas fa-clock"></i> ${sub.time}</span>
                 </div>
-                <p style="margin-top: 15px; color: var(--text-secondary);">${sub.description || "No description available."}</p>
+                <p class="detail-description">${sub.description || "No description available."}</p>
             </div>
 
             <div class="lessons-container">
