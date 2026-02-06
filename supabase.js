@@ -1,13 +1,10 @@
 // Supabase Configuration
 // Add your Supabase keys here - keep this file private
 
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+
 const SUPABASE_URL = "https://bhjzafenxdalggfucluo.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJoanphZmVueGRhbGdnZnVjbHVvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAzNzU5NTIsImV4cCI6MjA4NTk1MTk1Mn0.--9A_MTKSFhBllDz_KqSwJu3uniXegkKyKbYgqGKk_Q";
-
-// Initialize Supabase client
-// Note: You'll need to include the Supabase JS SDK in your HTML
-// Add this to your HTML head:
-// <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 // Bucket names for your project
 const SUPABASE_BUCKETS = {
@@ -27,6 +24,9 @@ const SUPABASE_FOLDERS = {
     ANNOUNCEMENTS: "announcements/"
 };
 
+// Initialize Supabase client
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 // Export for use in other scripts
 window.SUPABASE_CONFIG = {
     url: SUPABASE_URL,
@@ -34,3 +34,7 @@ window.SUPABASE_CONFIG = {
     buckets: SUPABASE_BUCKETS,
     folders: SUPABASE_FOLDERS
 };
+window.supabaseClient = supabaseClient;
+
+// Export for module scripts
+export { supabaseClient };
