@@ -12,7 +12,8 @@ import {
     updateDoc, 
     deleteDoc, 
     getDoc,
-    serverTimestamp 
+    serverTimestamp,
+    onSnapshot
 } from './firebase.js';
 
 // Initialize Supabase from global config
@@ -20,6 +21,9 @@ const supabase = window.supabase ? window.supabase.createClient(
     window.SUPABASE_CONFIG?.url || '',
     window.SUPABASE_CONFIG?.anonKey || ''
 ) : null;
+
+// File size limit (10MB)
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 // =========================
 // HELPER FUNCTIONS
@@ -29,6 +33,25 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+function formatDate(date) {
+    if (!date) return '';
+    const d = date.toMillis ? date.toMillis() : new Date(date);
+    return new Date(d).toLocaleDateString() + ' ' + new Date(d).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+}
+
+function formatDateShort(date) {
+    if (!date) return '';
+    const d = date.toMillis ? date.toMillis() : new Date(date);
+    return new Date(d).toLocaleDateString();
+}
+
+function formatFileSize(bytes) {
+    if (!bytes) return '';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 }
 
 // =========================
@@ -69,40 +92,65 @@ async function initializeSubjects() {
     const addTaskForm = document.getElementById('addTaskForm');
     const submissionModal = document.getElementById('submissionModal');
     const submissionForm = document.getElementById('submissionForm');
+    const uploadModal = document.getElementById('uploadModal');
+    const uploadForm = document.getElementById('uploadForm');
 
     if (!listContainer || !detailsContainer) return;
 
     const userData = JSON.parse(localStorage.getItem("userData"));
     const isInstructor = userData?.role === 'instructor';
 
-    // Redirect students who try to access instructor-only pages
-    if (!isInstructor && addBtn) {
-        addBtn.style.display = 'none';
+    // Show/hide add button based on role
+    if (addBtn) {
+        addBtn.style.display = isInstructor ? 'flex' : 'none';
     }
 
     let subjects = [];
     let currentSubjectIndex = null;
+    let currentSubjectId = null;
+    let currentTaskId = null;
+    let unsubscribeSnapshot = null;
 
     // Load subjects from Firestore
-    try {
-        let q;
-        if (isInstructor) {
-            q = query(collection(db, "subjects"), where("instructorId", "==", userData.id));
-        } else {
-            q = query(collection(db, "subjects"));
+    async function loadSubjects() {
+        try {
+            let q;
+            if (isInstructor) {
+                q = query(collection(db, "subjects"), where("instructorId", "==", userData.id));
+            } else {
+                q = query(collection(db, "subjects"));
+            }
+            
+            const snapshot = await getDocs(q);
+            subjects = [];
+            snapshot.forEach(doc => {
+                subjects.push({ id: doc.id, ...doc.data() });
+            });
+            renderSubjects();
+        } catch (err) {
+            console.error("Error loading subjects:", err);
         }
-        
-        const snapshot = await getDocs(q);
-        snapshot.forEach(doc => {
-            subjects.push({ id: doc.id, ...doc.data() });
+    }
+
+    // =========================
+    // REALTIME SUBSCRIPTIONS
+    // =========================
+    function startRealtimeListeners(subjectId) {
+        // Stop any existing subscription
+        if (unsubscribeSnapshot) {
+            unsubscribeSnapshot();
+            unsubscribeSnapshot = null;
+        }
+
+        if (!subjectId) return;
+
+        // Listen for task changes
+        const tasksQuery = query(collection(db, "tasks"), where("subjectId", "==", subjectId));
+        unsubscribeSnapshot = onSnapshot(tasksQuery, (snapshot) => {
+            if (currentSubjectIndex !== null && subjects[currentSubjectIndex]?.id === subjectId) {
+                renderSubjectDetails(currentSubjectIndex);
+            }
         });
-    } catch (err) {
-        console.error("Error loading subjects:", err);
-        // Fallback dummy data
-        subjects = [
-            { id: "demo1", name: "Mathematics", teacher: "Mr. Anderson", time: "08:00 AM - 09:30 AM", description: "Advanced Calculus and Algebra" },
-            { id: "demo2", name: "Physics", teacher: "Ms. Curie", time: "10:00 AM - 11:30 AM", description: "Fundamentals of Physics" }
-        ];
     }
 
     // =========================
@@ -120,7 +168,7 @@ async function initializeSubjects() {
         }
 
         listContainer.innerHTML = subjects.map((sub, index) => `
-            <div class="subject-list-item" data-index="${index}" data-id="${sub.id}">
+            <div class="subject-list-item ${index === currentSubjectIndex ? 'active' : ''}" data-index="${index}" data-id="${sub.id}">
                 <h4>${escapeHtml(sub.name)}</h4>
                 <p><i class="fas fa-chalkboard-teacher"></i> ${escapeHtml(sub.teacher || 'TBA')}</p>
             </div>
@@ -131,7 +179,9 @@ async function initializeSubjects() {
                 document.querySelectorAll('.subject-list-item').forEach(i => i.classList.remove('active'));
                 item.classList.add('active');
                 currentSubjectIndex = item.dataset.index;
+                currentSubjectId = item.dataset.id;
                 renderSubjectDetails(item.dataset.index);
+                startRealtimeListeners(item.dataset.id);
             });
         });
     }
@@ -142,6 +192,8 @@ async function initializeSubjects() {
     async function renderSubjectDetails(index) {
         const sub = subjects[index];
         if (!sub) return;
+
+        currentSubjectId = sub.id;
 
         // Load tasks for this subject
         let tasks = [];
@@ -162,6 +214,23 @@ async function initializeSubjects() {
             return aDate - bDate;
         });
 
+        // Load student submissions if student
+        let submissions = [];
+        if (!isInstructor) {
+            try {
+                const subQuery = query(
+                    collection(db, "submissions"),
+                    where("studentId", "==", userData.id)
+                );
+                const subSnapshot = await getDocs(subQuery);
+                subSnapshot.forEach(doc => {
+                    submissions.push({ id: doc.id, ...doc.data() });
+                });
+            } catch (err) {
+                console.error("Error loading submissions:", err);
+            }
+        }
+
         if (isInstructor) {
             // INSTRUCTOR VIEW
             detailsContainer.innerHTML = `
@@ -174,7 +243,7 @@ async function initializeSubjects() {
                     <p class="detail-description">${escapeHtml(sub.description || 'No description available.')}</p>
                     <div class="detail-actions" style="margin-top: 15px;">
                         <button onclick="openEditSubjectModal('${sub.id}')" class="btn-action" style="background: rgba(59, 130, 246, 0.2); border: none; padding: 8px 16px; border-radius: 6px; color: #60a5fa; cursor: pointer; margin-right: 10px;">
-                            <i class="fas fa-edit"></i> Edit Subject
+                            <i class="fas fa-edit"></i> Edit
                         </button>
                         <button onclick="deleteSubject('${sub.id}')" class="btn-action" style="background: rgba(239, 68, 68, 0.2); border: none; padding: 8px 16px; border-radius: 6px; color: #f87171; cursor: pointer;">
                             <i class="fas fa-trash"></i> Delete
@@ -190,26 +259,7 @@ async function initializeSubjects() {
                         </button>
                     </h3>
                     <div class="tasks-list" id="tasksList">
-                        ${tasks.length > 0 ? tasks.map(task => `
-                            <div class="task-item" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 10px;">
-                                <div>
-                                    <h4 style="margin: 0 0 5px;">${escapeHtml(task.title)}</h4>
-                                    <p style="font-size: 12px; color: #aaa; margin: 0;">
-                                        <i class="fas fa-clock"></i> Due: ${new Date(task.dueDate?.toMillis?.() || task.dueDate).toLocaleDateString()}
-                                        <span style="margin-left: 10px;"><i class="fas fa-star"></i> ${task.maxScore || 100} pts</span>
-                                    </p>
-                                    ${task.description ? `<p style="font-size: 12px; color: #888; margin: 5px 0 0;">${escapeHtml(task.description)}</p>` : ''}
-                                </div>
-                                <div class="task-actions" style="display: flex; gap: 8px;">
-                                    <button onclick="openEditTaskModal('${task.id}', '${sub.id}')" class="btn-action" title="Edit" style="background: rgba(59, 130, 246, 0.2); border: none; padding: 8px 12px; border-radius: 6px; color: #60a5fa; cursor: pointer;">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button onclick="deleteTask('${sub.id}', '${task.id}')" class="btn-action" title="Delete" style="background: rgba(239, 68, 68, 0.2); border: none; padding: 8px 12px; border-radius: 6px; color: #f87171; cursor: pointer;">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        `).join('') : '<p style="color: #aaa;">No tasks yet. Click + to add one.</p>'}
+                        ${tasks.length > 0 ? tasks.map(task => renderTaskItem(task, true)).join('') : '<p style="color: #aaa;">No tasks yet. Click + to add one.</p>'}
                     </div>
                 </div>
             `;
@@ -228,24 +278,128 @@ async function initializeSubjects() {
                 <div class="assignments-section" style="margin-top: 25px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 10px;">
                     <h3 style="margin-bottom: 15px;"><i class="fas fa-tasks"></i> Your Assignments</h3>
                     <div class="assignments-list">
-                        ${tasks.length > 0 ? tasks.map(task => `
-                            <div class="assignment-item" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 10px;">
-                                <div>
-                                    <h4 style="margin: 0 0 5px;">${escapeHtml(task.title)}</h4>
-                                    <p style="font-size: 12px; color: #aaa; margin: 0;">
-                                        <i class="fas fa-clock"></i> Due: ${new Date(task.dueDate?.toMillis?.() || task.dueDate).toLocaleDateString()}
-                                        <span style="margin-left: 10px;"><i class="fas fa-star"></i> ${task.maxScore || 100} pts</span>
-                                    </p>
-                                    ${task.description ? `<p style="font-size: 12px; color: #888; margin: 5px 0 0;">${escapeHtml(task.description)}</p>` : ''}
-                                </div>
-                                <button onclick="openSubmissionModal('${task.id}', '${sub.id}')" class="login-btn" style="width: auto; padding: 8px 16px; background: #4ade80;">
-                                    <i class="fas fa-paper-plane"></i> Submit
-                                </button>
-                            </div>
-                        `).join('') : '<p style="color: #aaa;">No assignments available.</p>'}
+                        ${tasks.length > 0 ? tasks.map(task => {
+                            const taskSubmissions = submissions.filter(s => s.taskId === task.id);
+                            const hasSubmitted = taskSubmissions.length > 0;
+                            return renderStudentTaskItem(task, hasSubmitted, taskSubmissions[0]);
+                        }).join('') : '<p style="color: #aaa;">No assignments available.</p>'}
                     </div>
                 </div>
             `;
+        }
+    }
+
+    // =========================
+    // RENDER TASK ITEMS
+    // =========================
+    function renderTaskItem(task, isInstructor) {
+        const dueDate = task.dueDate?.toMillis?.() || new Date(task.dueDate);
+        const isOverdue = dueDate < new Date();
+        
+        return `
+            <div class="task-item" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 10px;">
+                <div style="flex: 1;">
+                    <h4 style="margin: 0 0 5px;">${escapeHtml(task.title)}</h4>
+                    <p style="font-size: 12px; color: #aaa; margin: 0;">
+                        <i class="fas fa-clock"></i> Due: ${formatDateShort(dueDate)}
+                        <span style="margin-left: 10px;"><i class="fas fa-star"></i> ${task.maxScore || 100} pts</span>
+                        ${isOverdue ? '<span style="margin-left: 10px; color: #f87171;">(Overdue)</span>' : ''}
+                    </p>
+                    ${task.description ? `<p style="font-size: 12px; color: #888; margin: 5px 0 0;">${escapeHtml(task.description)}</p>` : ''}
+                    
+                    <!-- Task Files Section -->
+                    <div class="task-files" id="task-files-${task.id}" style="margin-top: 10px;">
+                        ${renderTaskFiles(task.id)}
+                    </div>
+                </div>
+                <div class="task-actions" style="display: flex; gap: 8px; flex-shrink: 0;">
+                    ${isInstructor ? `
+                        <button onclick="openUploadModal('${task.subjectId}', '${task.id}')" class="btn-action" title="Upload File" style="background: rgba(59, 130, 246, 0.2); border: none; padding: 8px 12px; border-radius: 6px; color: #60a5fa; cursor: pointer;">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </button>
+                        <button onclick="openEditTaskModal('${task.id}', '${task.subjectId}')" class="btn-action" title="Edit" style="background: rgba(59, 130, 246, 0.2); border: none; padding: 8px 12px; border-radius: 6px; color: #60a5fa; cursor: pointer;">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deleteTask('${task.subjectId}', '${task.id}')" class="btn-action" title="Delete" style="background: rgba(239, 68, 68, 0.2); border: none; padding: 8px 12px; border-radius: 6px; color: #f87171; cursor: pointer;">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    function renderStudentTaskItem(task, hasSubmitted, submission) {
+        const dueDate = task.dueDate?.toMillis?.() || new Date(task.dueDate);
+        const isOverdue = dueDate < new Date();
+        
+        return `
+            <div class="assignment-item" style="display: flex; justify-content: space-between; align-items: flex-start; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px; margin-bottom: 10px;">
+                <div style="flex: 1;">
+                    <h4 style="margin: 0 0 5px;">${escapeHtml(task.title)}</h4>
+                    <p style="font-size: 12px; color: #aaa; margin: 0;">
+                        <i class="fas fa-clock"></i> Due: ${formatDateShort(dueDate)}
+                        <span style="margin-left: 10px;"><i class="fas fa-star"></i> ${task.maxScore || 100} pts</span>
+                        ${isOverdue ? '<span style="margin-left: 10px; color: #f87171;">(Overdue)</span>' : ''}
+                    </p>
+                    ${task.description ? `<p style="font-size: 12px; color: #888; margin: 5px 0 0;">${escapeHtml(task.description)}</p>` : ''}
+                    
+                    ${hasSubmitted ? `
+                        <div style="margin-top: 10px; padding: 8px; background: rgba(74, 222, 128, 0.2); border-radius: 6px; font-size: 12px;">
+                            <i class="fas fa-check-circle" style="color: #4ade80;"></i> Submitted on ${formatDate(submission.submittedAt)}
+                            ${submission.fileURL ? `
+                                <br><i class="fas fa-file" style="color: #60a5fa;"></i> 
+                                <a href="${submission.fileURL}" target="_blank" style="color: #60a5fa;">${escapeHtml(submission.fileName)}</a>
+                                (${formatFileSize(submission.fileSize)})
+                            ` : ''}
+                        </div>
+                    ` : ''}
+                </div>
+                ${!hasSubmitted && !isOverdue ? `
+                    <button onclick="openSubmissionModal('${task.id}', '${task.subjectId}')" class="login-btn" style="width: auto; padding: 8px 16px; background: #4ade80;">
+                        <i class="fas fa-paper-plane"></i> Submit
+                    </button>
+                ` : hasSubmitted ? `
+                    <button class="login-btn" style="width: auto; padding: 8px 16px; background: rgba(74, 222, 128, 0.3); color: #4ade80; cursor: default;">
+                        <i class="fas fa-check"></i> Submitted
+                    </button>
+                ` : `
+                    <button class="login-btn" style="width: auto; padding: 8px 16px; background: rgba(239, 68, 68, 0.3); color: #f87171; cursor: default;">
+                        <i class="fas fa-times"></i> Closed
+                    </button>
+                `}
+            </div>
+        `;
+    }
+
+    // =========================
+    // RENDER TASK FILES
+    // =========================
+    async function renderTaskFiles(taskId) {
+        if (!isInstructor) return '';
+        
+        try {
+            const filesQuery = query(collection(db, "taskFiles"), where("taskId", "==", taskId));
+            const filesSnapshot = await getDocs(filesQuery);
+            let files = [];
+            filesSnapshot.forEach(doc => {
+                files.push({ id: doc.id, ...doc.data() });
+            });
+            
+            if (files.length === 0) return '';
+            
+            return `
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;">
+                    ${files.map(file => `
+                        <a href="${file.fileURL}" target="_blank" style="display: flex; align-items: center; gap: 5px; padding: 4px 10px; background: rgba(59, 130, 246, 0.2); border-radius: 4px; font-size: 11px; color: #60a5fa; text-decoration: none;">
+                            <i class="fas fa-file"></i> ${escapeHtml(file.fileName)}
+                        </a>
+                    `).join('')}
+                </div>
+            `;
+        } catch (err) {
+            console.error("Error loading files:", err);
+            return '';
         }
     }
 
@@ -272,7 +426,6 @@ async function initializeSubjects() {
                 
                 document.getElementById('editTaskMaxScore').value = task.maxScore || 100;
                 
-                // Show edit task modal
                 if (document.getElementById('editTaskModal')) {
                     document.getElementById('editTaskModal').style.display = 'block';
                 }
@@ -301,23 +454,30 @@ async function initializeSubjects() {
         submissionModal.style.display = 'block';
     };
 
+    window.openUploadModal = function(subjectId, taskId) {
+        document.getElementById('uploadSubjectId').value = subjectId;
+        document.getElementById('uploadTaskId').value = taskId;
+        if (uploadModal) {
+            uploadModal.style.display = 'block';
+        }
+    };
+
     window.deleteSubject = async function(subjectId) {
         if (!confirm("Are you sure you want to delete this subject and all its tasks?")) return;
 
         try {
-            // Delete subject
             await deleteDoc(doc(db, "subjects", subjectId));
             
-            // Delete all tasks for this subject
+            // Delete all tasks
             const tasksQuery = query(collection(db, "tasks"), where("subjectId", "==", subjectId));
             const tasksSnapshot = await getDocs(tasksQuery);
             for (const taskDoc of tasksSnapshot.docs) {
                 await deleteDoc(doc(db, "tasks", taskDoc.id));
             }
             
-            // Remove from local array
             subjects = subjects.filter(s => s.id !== subjectId);
             renderSubjects();
+            startRealtimeListeners(null);
             detailsContainer.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-book-open"></i>
@@ -341,6 +501,31 @@ async function initializeSubjects() {
             alert("Error deleting task: " + err.message);
         }
     };
+
+    // =========================
+    // FILE UPLOAD TO SUPABASE
+    // =========================
+    async function uploadFile(file, path) {
+        if (!supabase) {
+            throw new Error("Supabase not configured");
+        }
+        
+        if (file.size > MAX_FILE_SIZE) {
+            throw new Error(`File size must be less than ${formatFileSize(MAX_FILE_SIZE)}`);
+        }
+
+        const { data, error } = await supabase.storage
+            .from('task-files')
+            .upload(path, file);
+        
+        if (error) throw error;
+        
+        const { data: urlData } = supabase.storage
+            .from('task-files')
+            .getPublicUrl(path);
+        
+        return urlData.publicUrl;
+    }
 
     // =========================
     // ADD SUBJECT (FORM)
@@ -392,7 +577,6 @@ async function initializeSubjects() {
                 updatedAt: serverTimestamp()
             });
 
-            // Update local array
             const index = subjects.findIndex(s => s.id === subjectId);
             if (index !== -1) {
                 subjects[index] = {
@@ -477,6 +661,55 @@ async function initializeSubjects() {
     });
 
     // =========================
+    // UPLOAD FILE (FORM)
+    // =========================
+    uploadForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const fileInput = document.getElementById('uploadFile');
+        const subjectId = document.getElementById('uploadSubjectId').value;
+        const taskId = document.getElementById('uploadTaskId').value;
+
+        if (!fileInput.files.length) {
+            alert('Please select a file');
+            return;
+        }
+
+        const file = fileInput.files[0];
+
+        if (file.size > MAX_FILE_SIZE) {
+            alert(`File size must be less than ${formatFileSize(MAX_FILE_SIZE)}`);
+            return;
+        }
+
+        try {
+            const filePath = `task-files/${subjectId}/${taskId}/${Date.now()}_${file.name}`;
+            const fileURL = await uploadFile(file, filePath);
+
+            await addDoc(collection(db, "taskFiles"), {
+                taskId: taskId,
+                subjectId: subjectId,
+                fileName: file.name,
+                fileURL: fileURL,
+                filePath: filePath,
+                fileSize: file.size,
+                uploadedBy: userData.name,
+                uploadedAt: serverTimestamp()
+            });
+
+            alert('File uploaded successfully!');
+            uploadForm.reset();
+            if (uploadModal) {
+                uploadModal.style.display = 'none';
+            }
+            renderSubjectDetails(currentSubjectIndex);
+        } catch (err) {
+            console.error("Error uploading file:", err);
+            alert("Error uploading file: " + err.message);
+        }
+    });
+
+    // =========================
     // SUBMISSION (FORM)
     // =========================
     submissionForm?.addEventListener('submit', async (e) => {
@@ -503,22 +736,20 @@ async function initializeSubjects() {
 
         try {
             // Upload file if attached
-            if (fileInput.files.length > 0 && supabase) {
+            if (fileInput.files.length > 0) {
                 const file = fileInput.files[0];
-                const filePath = `submissions/${subjectId}/${taskId}/${userData.id}/${Date.now()}_${file.name}`;
                 
-                const { data, error } = await supabase.storage
-                    .from('student-submissions')
-                    .upload(filePath, file);
-                
-                if (!error) {
-                    const { data: urlData } = supabase.storage
-                        .from('student-submissions')
-                        .getPublicUrl(filePath);
-                    
-                    submission.fileURL = urlData.publicUrl;
-                    submission.fileName = file.name;
+                if (file.size > MAX_FILE_SIZE) {
+                    alert(`File size must be less than ${formatFileSize(MAX_FILE_SIZE)}`);
+                    return;
                 }
+
+                const filePath = `submissions/${subjectId}/${taskId}/${userData.id}/${Date.now()}_${file.name}`;
+                const fileURL = await uploadFile(file, filePath);
+                
+                submission.fileURL = fileURL;
+                submission.fileName = file.name;
+                submission.fileSize = file.size;
             }
 
             await addDoc(collection(db, "submissions"), submission);
@@ -526,6 +757,7 @@ async function initializeSubjects() {
             alert('Submission successful!');
             submissionForm.reset();
             submissionModal.style.display = 'none';
+            renderSubjectDetails(currentSubjectIndex);
         } catch (err) {
             console.error("Error submitting:", err);
             alert("Error submitting: " + err.message);
@@ -554,8 +786,8 @@ async function initializeSubjects() {
         }
     });
 
-    // Initial Render
-    renderSubjects();
+    // Initial Load
+    await loadSubjects();
 }
 
 // =========================
