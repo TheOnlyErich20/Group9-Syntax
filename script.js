@@ -64,6 +64,20 @@ const INSTRUCTOR_ACCESS_CODES = {
 function initializeTheme() {
     const theme = localStorage.getItem("theme") || "dark";
     applyTheme(theme);
+    
+    // Add click handlers for theme toggle buttons
+    const darkBtn = document.getElementById("darkModeBtn") || document.getElementById("darkThemeBtn");
+    const lightBtn = document.getElementById("lightModeBtn") || document.getElementById("lightThemeBtn");
+    
+    darkBtn?.addEventListener("click", () => {
+        localStorage.setItem("theme", "dark");
+        applyTheme("dark");
+    });
+    
+    lightBtn?.addEventListener("click", () => {
+        localStorage.setItem("theme", "light");
+        applyTheme("light");
+    });
 }
 
 function applyTheme(theme) {
