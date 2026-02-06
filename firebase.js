@@ -40,15 +40,18 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
 // Expose globally for non-module scripts
 window.firebaseApp = app;
 window.firebaseDb = db;
+window.firebaseAuth = auth;
 window.firebaseFirestore = db;
 
 // Export all functions for use in other scripts
 export { 
     db,
+    auth,
     collection, 
     addDoc, 
     getDocs, 
