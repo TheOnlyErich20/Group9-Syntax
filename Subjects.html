@@ -206,8 +206,10 @@
                 
                 // Wait for Firebase to be ready
                 function saveToFirestore() {
-                  if (typeof firebase !== 'undefined' && firebase.firestore) {
-                    firebase.firestore().collection('subjects').add(subjectData)
+                  const db = window.firebaseDb || window.firebaseFirestore;
+                  if (db) {
+                    console.log('Using Firestore:', db);
+                    db.collection('subjects').add(subjectData)
                       .then(function(docRef) {
                         console.log('Saved with ID:', docRef.id);
                         alert('Subject added successfully!');
