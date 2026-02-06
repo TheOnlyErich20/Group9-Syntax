@@ -2,6 +2,7 @@
 // IMPORT FROM FIREBASE JS
 // =========================
 import { 
+    app,
     db,
     auth,
     googleProvider,
@@ -24,11 +25,11 @@ import {
     signOut
 } from './firebase.js';
 
-// Initialize Supabase from global config
-const supabase = window.supabase ? window.supabase.createClient(
-    window.SUPABASE_CONFIG?.url || '',
-    window.SUPABASE_CONFIG?.anonKey || ''
-) : null;
+// Import Supabase client
+import { supabaseClient } from './supabase.js';
+
+// Use supabaseClient for file operations
+const supabase = supabaseClient;
 
 // File size limit (10MB)
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
