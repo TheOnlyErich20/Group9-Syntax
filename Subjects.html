@@ -1,151 +1,166 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Subjects - Darkboard</title>
+    <link rel="stylesheet" href="Darkboard.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
 
-    <!-- Main CSS -->
-    <link rel="stylesheet" href="Darkboard.css" />
-
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&display=swap"
-      rel="stylesheet"/>
-
-    <!-- Icons -->
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
-    />
-  </head>
-
-  <body>
-    <div class="dashboard-wrapper">
-      <!-- Sidebar -->
-      <aside class="sidebar">
+</head>
+<body>
+    
+<div class="dashboard-wrapper">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
         <a href="index.html" class="brand">DARKBOARD</a>
-
         <nav class="sidebar-nav">
-          <a href="index.html" class="nav-item">
-            <i class="fas fa-th-large"></i>
-            <span>Dashboard</span>
-          </a>
-
-          <a href="Subjects.html" class="nav-item active">
-            <i class="fas fa-book"></i>
-            <span>Subjects</span>
-          </a>
-
-          <a href="Grades.html" class="nav-item">
-            <i class="fas fa-chart-bar"></i>
-            <span>Grades</span>
-          </a>
-
-          <a href="Schedule.html" class="nav-item">
-            <i class="fas fa-calendar-alt"></i>
-            <span>Schedule</span>
-          </a>
-
-          <a href="Announcements.html" class="nav-item">
-            <i class="fas fa-bell"></i>
-            <span>Announcements</span>
-          </a>
-
-          <hr />
-
-          <a href="Profile.html" class="nav-item">
-            <i class="fas fa-user"></i>
-            <span>Profile</span>
-          </a>
-
-          <a href="Settings.html" class="nav-item">
-            <i class="fas fa-cog"></i>
-            <span>Settings</span>
-          </a>
-
-          <a href="Help.html" class="nav-item">
-            <i class="fas fa-question-circle"></i>
-            <span>Help</span>
-          </a>
-
-          <a href="#" id="logoutBtn" class="nav-item">
-            <i class="fas fa-sign-out-alt"></i>
-            <span>Logout</span>
-          </a>
+            <a href="index.html" class="nav-item">
+                <i class="fas fa-th-large"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="Subjects.html" class="nav-item active">
+                <i class="fas fa-book"></i>
+                <span>Subjects</span>
+            </a>
+            <a href="Grades.html" class="nav-item">
+                <i class="fas fa-chart-bar"></i>
+                <span>Grades</span>
+            </a>
+            <a href="Schedule.html" class="nav-item">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Schedule</span>
+            </a>
+            <a href="Announcements.html" class="nav-item">
+                <i class="fas fa-bell"></i>
+                <span>Announcements</span>
+            </a>
+            <hr />
+            <a href="Profile.html" class="nav-item">
+                <i class="fas fa-user"></i>
+                <span>Profile</span>
+            </a>
+            <a href="Settings.html" class="nav-item">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </a>
+            <a href="Help.html" class="nav-item">
+                <i class="fas fa-question-circle"></i>
+                <span>Help</span>
+            </a>
+            <a href="#" id="logoutBtn" class="nav-item">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </a>
         </nav>
-      </aside>
+    </aside>
 
-      <!-- Main Content -->
-      <main class="dashboard-content">
+    <!-- Main Content -->
+    <main class="dashboard-content">
         <section class="subjects-section">
-          <div class="subjects-header">
-            <h1>My Subjects</h1>
-            <p>Track your school subjects and grades</p>
-          </div>
-
-          <div class="add-subject">
-            <button id="addSubjectBtn" class="btn-add-subject">
-              <i class="fas fa-plus"></i> Add New Subject
-            </button>
-          </div>
-
-          <!-- Add Subject Modal -->
-          <div class="modal" id="addSubjectModal">
-            <div class="modal-content">
-              <span class="close">&times;</span>
-
-              <div class="modal-body">
-                <h2>Add New Subject</h2>
-
-                <form id="addSubjectForm">
-                  <label>Subject Name</label>
-                  <input type="text" id="newSubjectName" required />
-
-                  <label>Teacher</label>
-                  <input type="text" id="newTeacherName" required />
-
-                  <label>Time</label>
-                  <input type="text" id="newSubjectTime" required />
-                  
-                  <label>Description</label>
-                  <textarea id="newSubjectDescription"></textarea>
-
-                  <button type="submit" class="btn-add-subject">
-                    <i class="fas fa-check"></i> Save Subject
-                  </button>
-                </form>
-              </div>
-            </div>
-          </div>
-
-          <div class="subjects-container"></div>
-        </section>
-
-        <!-- Subject Detail Modal -->
-        <div class="modal" id="subjectModal">
-          <div class="modal-content">
-            <span class="close">&times;</span>
-
-            <div class="modal-body">
-              <h2 id="modalTitle"></h2>
-
-              <p><strong>Teacher:</strong> <span id="modalTeacher"></span></p>
-              <p><strong>Time:</strong> <span id="modalTime"></span></p>
-              <p><strong>Grade:</strong> <span id="modalGrade"></span></p>
-              <p><strong>Description:</strong> <span id="modalDescription"></span></p>
-
-              <button class="btn-edit">Edit Subject</button>
-            </div>
-          </div>
-        </div>
-      </main>
+    <div class="subjects-header">
+        <h1>My Subjects</h1>
+        <p>Track your school subjects and grades</p>
     </div>
 
-    <!-- Scripts -->
-    <script type="module" src="firebase.js"></script>
-    <script type="module" src="script.js"></script>
-  </body>
+        <div class="subjects-layout">
+        <!-- Sidebar List -->
+        <div class="subjects-list-container">
+            <div class="list-header">
+                <h3>Course List</h3>
+                <button id="btnAddSubjectMain" class="btn-add-mini"><i class="fas fa-plus"></i> Add</button>
+            </div>
+            <div class="subjects-list" id="subjectsList">
+                <!-- List items will be generated here -->
+            </div>
+        </div>
+
+        <!-- Detail View -->
+        <div class="subject-details-container" id="subjectDetailsContainer">
+            <div class="empty-selection">
+                <i class="fas fa-book-open"></i>
+                <p>Select a subject to view details</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Add Subject Modal -->
+<div class="modal" id="addSubjectModal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Add New Subject</h2>
+        <form id="addSubjectForm">
+            <div class="form-group">
+                <label>Subject Name</label>
+                <input type="text" id="newSubjectName" required placeholder="e.g. Chemistry">
+            </div>
+            <div class="form-group">
+                <label>Teacher</label>
+                <input type="text" id="newSubjectTeacher" required placeholder="e.g. Mr. White">
+            </div>
+            <div class="form-group">
+                <label>Schedule</label>
+                <input type="text" id="newSubjectTime" required placeholder="e.g. Mon/Wed 10:00 AM">
+            </div>
+            <div class="form-group">
+                <label>Type</label>
+                <select id="newSubjectType">
+                    <option value="core">Core</option>
+                    <option value="elective">Elective</option>
+                </select>
+            </div>
+            <button type="submit" class="login-btn">Add Subject</button>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Subject Modal -->
+<div class="modal" id="editSubjectModal">
+    <div class="modal-content">
+        <span class="close" id="closeEditSubjectModal">&times;</span>
+        <h2>Edit Subject</h2>
+        <form id="editSubjectForm">
+            <input type="hidden" id="editSubjectId">
+            <div class="form-group">
+                <label>Subject Name</label>
+                <input type="text" id="editSubjectName" required>
+            </div>
+            <div class="form-group">
+                <label>Teacher</label>
+                <input type="text" id="editSubjectTeacher" required>
+            </div>
+            <div class="form-group">
+                <label>Schedule</label>
+                <input type="text" id="editSubjectTime" required>
+            </div>
+            <div class="form-group">
+                <label>Type</label>
+                <select id="editSubjectType">
+                    <option value="core">Core</option>
+                    <option value="elective">Elective</option>
+                </select>
+            </div>
+            <button type="submit" class="login-btn">Save Changes</button>
+        </form>
+    </div>
+</div>
+    </main>
+</div>
+
+<script type="module" src="firebase.js"></script>
+<script type="module" src="script.js"></script>
+
+    <script type="module">
+    import { logout } from './script.js'; // Make sure logout function is exported
+
+    // Logout button
+    const logoutBtn = document.getElementById("logoutBtn");
+    logoutBtn.addEventListener("click", (e) => logout(e));
+
+</script>
+</body>
 </html>
