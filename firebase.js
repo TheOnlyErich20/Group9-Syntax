@@ -13,7 +13,7 @@ import {
     getDoc,
     setDoc,
     serverTimestamp,
-    onSnapshot
+    onSnapshot 
 } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 import {
@@ -49,14 +49,13 @@ const googleProvider = new GoogleAuthProvider();
 window.firebaseApp = app;
 window.firebaseDb = db;
 window.firebaseAuth = auth;
-window.firebaseFirestore = db;
 window.googleProvider = googleProvider;
 
 // Export all functions for use in other scripts
 export { 
+    app,
     db,
     auth,
-    app,
     googleProvider,
     collection, 
     addDoc, 
