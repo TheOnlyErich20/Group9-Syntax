@@ -2,10 +2,7 @@
 // IMPORT FROM FIREBASE JS
 // =========================
 import { 
-    app,
-    db,
-    auth,
-    googleProvider,
+    db, 
     collection, 
     addDoc, 
     getDocs, 
@@ -15,21 +12,15 @@ import {
     updateDoc, 
     deleteDoc, 
     getDoc,
-    setDoc,
     serverTimestamp,
-    onSnapshot,
-    signInWithEmailAndPassword, 
-    createUserWithEmailAndPassword, 
-    updateProfile,
-    signInWithPopup,
-    signOut
+    onSnapshot
 } from './firebase.js';
 
-// Import Supabase client
-import { supabaseClient } from './supabase.js';
-
-// Use supabaseClient for file operations
-const supabase = supabaseClient;
+// Initialize Supabase from global config
+const supabase = window.supabase ? window.supabase.createClient(
+    window.SUPABASE_CONFIG?.url || '',
+    window.SUPABASE_CONFIG?.anonKey || ''
+) : null;
 
 // File size limit (10MB)
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -61,314 +52,6 @@ function formatFileSize(bytes) {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-}
-
-function setMessage(id, msg, success = false) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.textContent = msg;
-    el.style.display = "block";
-    el.style.color = success ? "#51cf66" : "#ff6b6b";
-}
-
-// =========================
-// LOGIN FUNCTIONALITY
-// =========================
-function initializeLogin() {
-    const loginForm = document.getElementById("loginForm");
-    if (!loginForm) return;
-    
-    loginForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const email = document.getElementById("email").value.trim();
-        const password = document.getElementById("password").value.trim();
-
-        if (!email || !password) {
-            setMessage("loginError", "Please fill in all fields");
-            return;
-        }
-
-        try {
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
-
-            // Get user role from Firestore
-            let userData = { id: user.uid, name: user.displayName || email, email: user.email, role: 'student' };
-            
-            try {
-                const studentDoc = await getDoc(doc(db, "students", user.uid));
-                if (studentDoc.exists()) {
-                    userData = { ...userData, ...studentDoc.data() };
-                } else {
-                    const instructorDoc = await getDoc(doc(db, "instructors", user.uid));
-                    if (instructorDoc.exists()) {
-                        userData = { ...userData, ...instructorDoc.data() };
-                    }
-                }
-            } catch (err) {
-                console.error("Error fetching user data:", err);
-            }
-
-            localStorage.setItem("isLoggedIn", "true");
-            localStorage.setItem("userData", JSON.stringify(userData));
-
-            setMessage("loginSuccess", "Login successful! Redirecting...", true);
-            setTimeout(() => location.href = "index.html", 1200);
-        } catch (err) {
-            console.error("Login error:", err);
-            setMessage("loginError", getAuthErrorMessage(err.code));
-        }
-    });
-}
-
-// =========================
-// SIGNUP FUNCTIONALITY
-// =========================
-function initializeSignup() {
-    const signupForm = document.getElementById("signupForm");
-    if (!signupForm) return;
-    
-    // Handle role selection
-    const roleInputs = signupForm.querySelectorAll('input[name="role"]');
-    const accessCodeGroup = document.getElementById('accessCodeGroup');
-    const instructorRole = document.querySelector('.instructor-role');
-    const studentRole = document.querySelector('.student-role');
-    const instructorBenefits = document.querySelector('.instructor-benefits');
-    const studentBenefits = document.querySelector('.student-benefits');
-    
-    roleInputs.forEach(input => {
-        input.addEventListener('change', () => {
-            if (input.value === 'instructor') {
-                accessCodeGroup.style.display = 'block';
-                instructorRole.classList.add('active');
-                studentRole.classList.remove('active');
-                instructorBenefits.style.display = 'block';
-                studentBenefits.style.display = 'none';
-            } else {
-                accessCodeGroup.style.display = 'none';
-                studentRole.classList.add('active');
-                instructorRole.classList.remove('active');
-                instructorBenefits.style.display = 'none';
-                studentBenefits.style.display = 'block';
-            }
-        });
-    });
-    
-    signupForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const fullName = document.getElementById("fullName").value.trim();
-        const email = document.getElementById("signupEmail").value.trim();
-        const password = document.getElementById("signupPassword").value;
-        const confirmPassword = document.getElementById("confirmPassword").value;
-        const phone = document.getElementById("phone").value.trim();
-        const course = document.getElementById("course").value.trim();
-        const role = signupForm.querySelector('input[name="role"]:checked')?.value || 'student';
-        const accessCode = document.getElementById("accessCode")?.value.trim();
-
-        if (!fullName || !email || !password || !confirmPassword || !course) {
-            setMessage("signupMessage", "Please fill in all required fields");
-            return;
-        }
-
-        if (password !== confirmPassword) {
-            setMessage("signupMessage", "Passwords do not match");
-            return;
-        }
-
-        if (password.length < 6) {
-            setMessage("signupMessage", "Password must be at least 6 characters");
-            return;
-        }
-
-        if (role === 'instructor') {
-            // Verify access code (you can change this)
-            const VALID_ACCESS_CODE = "ICC2024";
-            if (accessCode !== VALID_ACCESS_CODE) {
-                setMessage("signupMessage", "Invalid instructor access code");
-                return;
-            }
-        }
-
-        try {
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            const user = userCredential.user;
-
-            await updateProfile(user, { displayName: fullName });
-
-            const userData = {
-                fullName,
-                email,
-                phone,
-                course,
-                role: role,
-                createdAt: serverTimestamp()
-            };
-
-            // Save to appropriate collection
-            if (role === 'student') {
-                await setDoc(doc(db, "students", user.uid), {
-                    ...userData,
-                    enrolledSubjects: []
-                });
-            } else {
-                await setDoc(doc(db, "instructors", user.uid), {
-                    ...userData,
-                    subjects: []
-                });
-            }
-
-            // Also save to users collection
-            await setDoc(doc(db, "users", user.uid), {
-                fullName,
-                email,
-                phone,
-                course,
-                role,
-                createdAt: serverTimestamp()
-            });
-
-            setMessage("signupMessage", "Account created successfully! Redirecting...", true);
-            setTimeout(() => window.location.href = "Login.html", 1500);
-
-        } catch (err) {
-            console.error("Signup error:", err);
-            setMessage("signupMessage", getAuthErrorMessage(err.code));
-        }
-    });
-}
-
-// =========================
-// GOOGLE SIGN-IN
-// =========================
-window.signInWithGoogle = async function() {
-    try {
-        const result = await signInWithPopup(auth, googleProvider);
-        const user = result.user;
-        
-        // Check if user already exists
-        let userData = { 
-            id: user.uid, 
-            name: user.displayName || user.email, 
-            email: user.email, 
-            role: 'student',
-            photoURL: user.photoURL
-        };
-        
-        try {
-            const userDoc = await getDoc(doc(db, "users", user.uid));
-            if (userDoc.exists()) {
-                userData = { ...userData, ...userDoc.data() };
-            } else {
-                // New Google user - save to users collection
-                await setDoc(doc(db, "users", user.uid), {
-                    fullName: user.displayName || user.email.split('@')[0],
-                    email: user.email,
-                    phone: '',
-                    course: '',
-                    role: 'student',
-                    photoURL: user.photoURL,
-                    createdAt: serverTimestamp()
-                });
-                
-                await setDoc(doc(db, "students", user.uid), {
-                    fullName: user.displayName || user.email.split('@')[0],
-                    email: user.email,
-                    phone: '',
-                    course: '',
-                    role: 'student',
-                    enrolledSubjects: [],
-                    createdAt: serverTimestamp()
-                });
-            }
-        } catch (err) {
-            console.error("Error checking user:", err);
-        }
-
-        localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("userData", JSON.stringify(userData));
-
-        setMessage("loginSuccess", "Google sign-in successful! Redirecting...", true);
-        setTimeout(() => location.href = "index.html", 1200);
-    } catch (err) {
-        console.error("Google sign-in error:", err);
-        setMessage("loginError", getAuthErrorMessage(err.code));
-    }
-};
-
-// =========================
-// GET AUTH ERROR MESSAGE
-// =========================
-function getAuthErrorMessage(errorCode) {
-    const errorMessages = {
-        'auth/email-already-in-use': 'Email is already registered',
-        'auth/invalid-email': 'Invalid email address',
-        'auth/weak-password': 'Password should be at least 6 characters',
-        'auth/user-not-found': 'No account found with this email',
-        'auth/wrong-password': 'Incorrect password',
-        'auth/popup-closed-by-user': 'Sign-in popup was closed',
-        'auth/cancelled-popup-request': 'Sign-in was cancelled',
-        'auth/network-request-failed': 'Network error. Please check your connection',
-        'auth/too-many-requests': 'Too many attempts. Please try again later'
-    };
-    
-    return errorMessages[errorCode] || 'An error occurred. Please try again.';
-}
-
-// =========================
-// PASSWORD TOGGLE
-// =========================
-function initializePasswordToggles() {
-    function togglePassword(inputId, iconId) {
-        const input = document.getElementById(inputId);
-        const icon = document.querySelector(`#${iconId} i`);
-        if (!input || !icon) return;
-        input.type = input.type === "password" ? "text" : "password";
-        icon.classList.toggle("fa-eye-slash");
-        icon.classList.toggle("fa-eye");
-    }
-
-    document.getElementById("togglePassword")?.addEventListener("click", () => togglePassword("password", "togglePassword"));
-    document.getElementById("toggleSignupPassword")?.addEventListener("click", () => togglePassword("signupPassword", "toggleSignupPassword"));
-    document.getElementById("toggleConfirmPassword")?.addEventListener("click", () => togglePassword("confirmPassword", "toggleConfirmPassword"));
-}
-
-// =========================
-// LOGOUT
-// =========================
-async function logout(e) {
-    if (e) e.preventDefault();
-    
-    try {
-        await signOut(auth);
-    } catch (err) {
-        console.error("Logout error:", err);
-    }
-    
-    localStorage.clear();
-    location.href = "Login.html";
-}
-
-// =========================
-// DASHBOARD USER INFO
-// =========================
-function initializeDashboard() {
-    const userData = JSON.parse(localStorage.getItem("userData"));
-    if (!userData) return;
-
-    const userNameEl = document.getElementById("headerUserName");
-    const dashboardNameEl = document.getElementById("dashboardUserName");
-    const greetingEl = document.getElementById("greetingMessage");
-
-    if (userNameEl) userNameEl.textContent = userData.name;
-    if (dashboardNameEl) dashboardNameEl.textContent = (userData.name || userData.fullName || '').split(" ")[0];
-
-    if (greetingEl) {
-        const hour = new Date().getHours();
-        greetingEl.textContent = hour < 12 ? "Good morning 🌅" :
-                                 hour < 17 ? "Good afternoon ☀️" :
-                                             "Good evening 🌙";
-    }
 }
 
 // =========================
@@ -1302,10 +985,6 @@ function initializeHelp() {
 // =========================
 document.addEventListener("DOMContentLoaded", () => {
     initializeTheme();
-    initializeLogin();
-    initializeSignup();
-    initializePasswordToggles();
-    initializeDashboard();
     initializeSubjects();
     initializeProfile();
     initializeGradesTable();
