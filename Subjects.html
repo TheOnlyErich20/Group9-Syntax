@@ -1,669 +1,163 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Subjects - Darkboard</title>
-    <link rel="stylesheet" href="Darkboard.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body>
-    <nav class="sidebar" id="sidebar">
-        <div class="logo">
-            <i class="fas fa-graduation-cap"></i>
-            <span>Darkboard</span>
-        </div>
-        <ul class="nav-links">
-            <li><a href="index.html"><i class="fas fa-home"></i> Home</a></li>
-            <li><a href="Subjects.html" class="active"><i class="fas fa-book"></i> Subjects</a></li>
-            <li><a href="Schedule.html"><i class="fas fa-calendar-alt"></i> Schedule</a></li>
-            <li><a href="Announcements.html"><i class="fas fa-bullhorn"></i> Announcements</a></li>
-            <li><a href="Grades.html"><i class="fas fa-chart-line"></i> Grades</a></li>
-            <li><a href="Help.html"><i class="fas fa-question-circle"></i> Help</a></li>
-            <li><a href="Settings.html"><i class="fas fa-cog"></i> Settings</a></li>
-        </ul>
-        <div class="bottom-links">
-            <a href="Profile.html"><i class="fas fa-user"></i> Profile</a>
-            <a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a>
-        </div>
-    </nav>
 
-    <main class="content" id="content">
-        <header>
-            <button class="menu-toggle" id="menuToggle">
-                <i class="fas fa-bars"></i>
-            </button>
-            <h1>My Subjects</h1>
-            <div class="user-info">
-                <span id="userName">User</span>
-                <div class="theme-toggle">
-                    <i class="fas fa-moon"></i>
-                </div>
-            </div>
-        </header>
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="Darkboard.css" />
 
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"/>
+
+    <!-- Icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"
+    />
+  </head>
+
+  <body>
+    <div class="dashboard-wrapper">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <a href="index.html" class="brand">DARKBOARD</a>
+
+        <nav class="sidebar-nav">
+          <a href="index.html" class="nav-item">
+            <i class="fas fa-th-large"></i>
+            <span>Dashboard</span>
+          </a>
+
+          <a href="Subjects.html" class="nav-item active">
+            <i class="fas fa-book"></i>
+            <span>Subjects</span>
+          </a>
+
+          <a href="Grades.html" class="nav-item">
+            <i class="fas fa-chart-bar"></i>
+            <span>Grades</span>
+          </a>
+
+          <a href="Schedule.html" class="nav-item">
+            <i class="fas fa-calendar-alt"></i>
+            <span>Schedule</span>
+          </a>
+
+          <a href="Announcements.html" class="nav-item">
+            <i class="fas fa-bell"></i>
+            <span>Announcements</span>
+          </a>
+
+          <hr
+            style="
+              border: 0;
+              border-top: 1px solid rgba(255, 255, 255, 0.1);
+              margin: 10px 0;
+            "
+          />
+
+          <a href="Profile.html" class="nav-item">
+            <i class="fas fa-user"></i>
+            <span>Profile</span>
+          </a>
+
+          <a href="Settings.html" class="nav-item">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+          </a>
+
+          <a href="Help.html" class="nav-item">
+            <i class="fas fa-question-circle"></i>
+            <span>Help</span>
+          </a>
+
+          <a href="#" id="logoutBtn" class="nav-item">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+          </a>
+        </nav>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="dashboard-content">
         <section class="subjects-section">
-            <div class="subjects-header">
-                <h2>Enrolled Subjects</h2>
-                <button id="addSubjectBtn" class="btn-primary" style="display: none;">
-                    <i class="fas fa-plus"></i> Add Subject
+          <div class="subjects-header">
+            <h1>My Subjects</h1>
+            <p>Track your school subjects and grades</p>
+          </div>
+
+          <!-- New Split Layout -->
+          <div class="subjects-content-wrapper">
+            <!-- Left Sidebar: List -->
+            <div class="subjects-sidebar">
+              <div class="sidebar-header">
+                <h3>Subject List</h3>
+                <button id="addSubjectBtn" class="btn-add-mini" title="Add Subject">
+                  <i class="fas fa-plus"></i>
                 </button>
+              </div>
+              <div class="subjects-list" id="subjectsList">
+                <!-- List items will be injected here -->
+              </div>
             </div>
-            
-            <div class="subjects-grid" id="subjectsGrid">
-                <!-- Subjects will be loaded here -->
-            </div>
-        </section>
 
-        <!-- Add Subject Modal -->
-        <div id="addSubjectModal" class="modal">
+            <!-- Right Panel: Details -->
+            <div class="subject-details" id="subjectDetailsPanel">
+              <div class="empty-state">
+                <i class="fas fa-book-open"></i>
+                <p>Select a subject from the list to view details and lessons.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Add Subject Modal (Kept) -->
+          <div class="modal" id="addSubjectModal">
             <div class="modal-content">
-                <span class="close">&times;</span>
-                <h2><i class="fas fa-book"></i> Add New Subject</h2>
+              <span class="close">&times;</span>
+
+              <div class="modal-body">
+                <h2>Add New Subject</h2>
+
                 <form id="addSubjectForm">
-                    <div class="form-group">
-                        <label><i class="fas fa-book"></i> Subject Name</label>
-                        <input type="text" id="newSubjectName" placeholder="Enter subject name" required>
-                    </div>
-                    <div class="form-group">
-                        <label><i class="fas fa-chalkboard-teacher"></i> Teacher/Instructor</label>
-                        <input type="text" id="newTeacherName" placeholder="Enter teacher name" required>
-                    </div>
-                    <div class="form-group">
-                        <label><i class="fas fa-clock"></i> Schedule Time</label>
-                        <input type="text" id="newSubjectTime" placeholder="e.g., Mon/Wed 9:00-10:30 AM" required>
-                    </div>
-                    <div class="form-group">
-                        <label><i class="fas fa-align-left"></i> Description (Optional)</label>
-                        <textarea id="newSubjectDescription" placeholder="Enter subject description"></textarea>
-                    </div>
-                    <div class="form-actions">
-                        <button type="button" class="btn-secondary" onclick="closeModal('addSubjectModal')">Cancel</button>
-                        <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Save Subject</button>
-                    </div>
+                  <div class="form-group">
+                    <label>Subject Name</label>
+                    <input type="text" id="newSubjectName" required placeholder="e.g. Mathematics" />
+                  </div>
+
+                  <div class="form-group">
+                    <label>Teacher</label>
+                    <input type="text" id="newTeacherName" required placeholder="e.g. Mr. Anderson" />
+                  </div>
+
+                  <div class="form-group">
+                    <label>Time</label>
+                    <input type="text" id="newSubjectTime" required placeholder="e.g. 08:00 AM - 09:30 AM" />
+                  </div>
+                  
+                  <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="newSubjectDescription" rows="5" placeholder="Brief description of the subject..."></textarea>
+                  </div>
+
+                  <button type="submit" class="btn-add-subject">
+                    <i class="fas fa-check"></i> Save Subject
+                  </button>
                 </form>
+              </div>
             </div>
-        </div>
+          </div>
+        </section>
+      </main>
+    </div>
 
-        <!-- Add Task Modal -->
-        <div id="addTaskModal" class="modal">
-            <div class="modal-content">
-                <span class="close">&times;</span>
-                <h2><i class="fas fa-tasks"></i> Add New Task</h2>
-                <form id="addTaskForm">
-                    <div class="form-group">
-                        <label><i class="fas fa-heading"></i> Task Title</label>
-                        <input type="text" id="newTaskTitle" placeholder="Enter task title" required>
-                    </div>
-                    <div class="form-group">
-                        <label><i class="fas fa-align-left"></i> Description</label>
-                        <textarea id="newTaskDescription" placeholder="Enter task description"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label><i class="fas fa-calendar"></i> Due Date</label>
-                        <input type="datetime-local" id="newTaskDueDate" required>
-                    </div>
-                    <div class="form-group">
-                        <label><i class="fas fa-flag"></i> Priority</label>
-                        <select id="newTaskPriority">
-                            <option value="low">Low</option>
-                            <option value="medium" selected>Medium</option>
-                            <option value="high">High</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label><i class="fas fa-paperclip"></i> Attachments</label>
-                        <input type="file" id="newTaskAttachments" multiple>
-                        <small>Supported: PDF, DOC, DOCX, Images (Max: 10MB)</small>
-                    </div>
-                    <input type="hidden" id="currentSubjectId">
-                    <input type="hidden" id="currentSubjectName">
-                    <div class="form-actions">
-                        <button type="button" class="btn-secondary" onclick="closeModal('addTaskModal')">Cancel</button>
-                        <button type="submit" class="btn-primary"><i class="fas fa-plus"></i> Add Task</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- File Upload Modal -->
-        <div id="fileUploadModal" class="modal">
-            <div class="modal-content">
-                <span class="close">&times;</span>
-                <h2><i class="fas fa-cloud-upload-alt"></i> Upload File</h2>
-                <form id="fileUploadForm">
-                    <div class="form-group">
-                        <label><i class="fas fa-file"></i> Select File</label>
-                        <input type="file" id="fileToUpload" required>
-                        <small>Supported: PDF, DOC, DOCX, Images (Max: 10MB)</small>
-                    </div>
-                    <div class="form-group">
-                        <label><i class="fas fa-tag"></i> File Description</label>
-                        <input type="text" id="fileDescription" placeholder="Enter file description">
-                    </div>
-                    <input type="hidden" id="uploadSubjectId">
-                    <input type="hidden" id="uploadTaskId">
-                    <input type="hidden" id="uploadType">
-                    <div class="form-actions">
-                        <button type="button" class="btn-secondary" onclick="closeModal('fileUploadModal')">Cancel</button>
-                        <button type="submit" class="btn-primary"><i class="fas fa-upload"></i> Upload</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Submission Modal -->
-        <div id="submissionModal" class="modal">
-            <div class="modal-content">
-                <span class="close">&times;</span>
-                <h2><i class="fas fa-paper-plane"></i> Submit Task</h2>
-                <form id="submissionForm">
-                    <div class="form-group">
-                        <label><i class="fas fa-file-alt"></i> Your Submission</label>
-                        <textarea id="submissionText" placeholder="Enter your answer or paste your work here..."></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label><i class="fas fa-paperclip"></i> Attach File (Optional)</label>
-                        <input type="file" id="submissionFile">
-                    </div>
-                    <input type="hidden" id="submitTaskId">
-                    <input type="hidden" id="submitSubjectId">
-                    <div class="form-actions">
-                        <button type="button" class="btn-secondary" onclick="closeModal('submissionModal')">Cancel</button>
-                        <button type="submit" class="btn-primary"><i class="fas fa-paper-plane"></i> Submit</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </main>
-
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    <script src="firebase.js"></script>
-    <script src="script.js"></script>
-    <script>
-        // Add Task Modal Functions
-        function openTaskModal(subjectId, subjectName) {
-            document.getElementById('currentSubjectId').value = subjectId;
-            document.getElementById('currentSubjectName').value = subjectName;
-            document.getElementById('addTaskModal').style.display = 'block';
-        }
-
-        function closeTaskModal() {
-            document.getElementById('addTaskModal').style.display = 'none';
-        }
-
-        // File Upload Modal Functions
-        function openFileUploadModal(subjectId, taskId = '', type = 'subject') {
-            document.getElementById('uploadSubjectId').value = subjectId;
-            document.getElementById('uploadTaskId').value = taskId;
-            document.getElementById('uploadType').value = type;
-            document.getElementById('fileUploadModal').style.display = 'block';
-        }
-
-        function closeFileUploadModal() {
-            document.getElementById('fileUploadModal').style.display = 'none';
-        }
-
-        // Submission Modal Functions
-        function openSubmissionModal(taskId, subjectId) {
-            document.getElementById('submitTaskId').value = taskId;
-            document.getElementById('submitSubjectId').value = subjectId;
-            document.getElementById('submissionModal').style.display = 'block';
-        }
-
-        function closeSubmissionModal() {
-            document.getElementById('submissionModal').style.display = 'none';
-        }
-
-        // General Modal Functions
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        }
-
-        // Global function to add subject
-        window.addSubject = function() {
-            document.getElementById('addSubjectModal').style.display = 'block';
-        }
-
-        // Initialize page
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeSubjects();
-            initAddSubjectForm();
-            initTaskForm();
-            initFileUploadForm();
-            initSubmissionForm();
-        });
-
-        // Add Subject form handler
-        function initAddSubjectForm() {
-            const form = document.getElementById('addSubjectForm');
-            const modal = document.getElementById('addSubjectModal');
-            const addBtn = document.getElementById('addSubjectBtn');
-            
-            if (!form) {
-                setTimeout(initAddSubjectForm, 100);
-                return;
-            }
-            
-            console.log('Add Subject form initialized');
-            
-            // Open modal handler
-            if (addBtn && modal) {
-                addBtn.addEventListener('click', function() {
-                    modal.style.display = 'block';
-                });
-            }
-            
-            // Close modal when clicking outside
-            window.addEventListener('click', function(e) {
-                if (e.target === modal) {
-                    modal.style.display = 'none';
-                }
-            });
-            
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                console.log('Form submitted');
-                
-                const name = document.getElementById('newSubjectName').value.trim();
-                const teacher = document.getElementById('newTeacherName').value.trim();
-                const time = document.getElementById('newSubjectTime').value.trim();
-                const description = document.getElementById('newSubjectDescription').value.trim();
-                
-                const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-                
-                if (!name || !teacher || !time) {
-                    alert('Please fill in all required fields');
-                    return;
-                }
-                
-                const subjectData = {
-                    name: name,
-                    teacher: teacher,
-                    time: time,
-                    description: description,
-                    instructorId: userData.id,
-                    instructorName: userData.name,
-                    createdAt: new Date()
-                };
-                
-                console.log('Saving:', subjectData);
-                
-                // Save to Firestore
-                const db = firebase.firestore();
-                db.collection('subjects').add(subjectData)
-                    .then(function(docRef) {
-                        console.log('Saved with ID:', docRef.id);
-                        alert('Subject added successfully!');
-                        form.reset();
-                        modal.style.display = 'none';
-                        location.reload();
-                    })
-                    .catch(function(err) {
-                        console.error('Error:', err);
-                        alert('Error saving: ' + err.message);
-                    });
-            });
-        }
-
-        // Task form handler
-        function initTaskForm() {
-            const form = document.getElementById('addTaskForm');
-            if (!form) return;
-            
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const title = document.getElementById('newTaskTitle').value.trim();
-                const description = document.getElementById('newTaskDescription').value.trim();
-                const dueDate = document.getElementById('newTaskDueDate').value;
-                const priority = document.getElementById('newTaskPriority').value;
-                const subjectId = document.getElementById('currentSubjectId').value;
-                const subjectName = document.getElementById('currentSubjectName').value;
-                
-                if (!title || !dueDate) {
-                    alert('Please fill in all required fields');
-                    return;
-                }
-                
-                const taskData = {
-                    title: title,
-                    description: description,
-                    dueDate: new Date(dueDate),
-                    priority: priority,
-                    subjectId: subjectId,
-                    subjectName: subjectName,
-                    createdAt: new Date(),
-                    status: 'active'
-                };
-                
-                // Save task to Firestore
-                const db = firebase.firestore();
-                db.collection('tasks').add(taskData)
-                    .then(function(docRef) {
-                        alert('Task added successfully!');
-                        form.reset();
-                        closeTaskModal();
-                        location.reload();
-                    })
-                    .catch(function(err) {
-                        alert('Error saving task: ' + err.message);
-                    });
-            });
-        }
-
-        // File upload form handler
-        function initFileUploadForm() {
-            const form = document.getElementById('fileUploadForm');
-            if (!form) return;
-            
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const fileInput = document.getElementById('fileToUpload');
-                const fileDescription = document.getElementById('fileDescription').value.trim();
-                const subjectId = document.getElementById('uploadSubjectId').value;
-                const taskId = document.getElementById('uploadTaskId').value;
-                const uploadType = document.getElementById('uploadType').value;
-                
-                if (fileInput.files.length === 0) {
-                    alert('Please select a file');
-                    return;
-                }
-                
-                const file = fileInput.files[0];
-                const fileName = file.name;
-                const fileSize = file.size;
-                
-                // Validate file size (10MB max)
-                if (fileSize > 10 * 1024 * 1024) {
-                    alert('File size must be less than 10MB');
-                    return;
-                }
-                
-                // Upload to Firebase Storage
-                const storageRef = firebase.storage().ref();
-                const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-                let filePath;
-                
-                if (uploadType === 'task') {
-                    filePath = `task-attachments/${subjectId}/${taskId}/${Date.now()}_${fileName}`;
-                } else {
-                    filePath = `subject-files/${subjectId}/${Date.now()}_${fileName}`;
-                }
-                
-                const fileRef = storageRef.child(filePath);
-                
-                fileRef.put(file)
-                    .then(function(snapshot) {
-                        return snapshot.ref.getDownloadURL();
-                    })
-                    .then(function(downloadURL) {
-                        // Save file info to Firestore
-                        const fileData = {
-                            fileName: fileName,
-                            fileURL: downloadURL,
-                            filePath: filePath,
-                            description: fileDescription,
-                            subjectId: subjectId,
-                            taskId: taskId || null,
-                            uploadedBy: userData.name,
-                            uploadedById: userData.id,
-                            uploadedAt: new Date()
-                        };
-                        
-                        const db = firebase.firestore();
-                        return db.collection('files').add(fileData);
-                    })
-                    .then(function() {
-                        alert('File uploaded successfully!');
-                        form.reset();
-                        closeFileUploadModal();
-                        location.reload();
-                    })
-                    .catch(function(err) {
-                        alert('Error uploading file: ' + err.message);
-                    });
-            });
-        }
-
-        // Submission form handler
-        function initSubmissionForm() {
-            const form = document.getElementById('submissionForm');
-            if (!form) return;
-            
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const submissionText = document.getElementById('submissionText').value.trim();
-                const fileInput = document.getElementById('submissionFile');
-                const taskId = document.getElementById('submitTaskId').value;
-                const subjectId = document.getElementById('submitSubjectId').value;
-                
-                if (!submissionText && fileInput.files.length === 0) {
-                    alert('Please provide a text answer or attach a file');
-                    return;
-                }
-                
-                const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-                const submissionData = {
-                    taskId: taskId,
-                    subjectId: subjectId,
-                    studentId: userData.id,
-                    studentName: userData.name,
-                    answer: submissionText,
-                    submittedAt: new Date(),
-                    status: 'submitted'
-                };
-                
-                // Check if file attached
-                if (fileInput.files.length > 0) {
-                    const file = fileInput.files[0];
-                    const storageRef = firebase.storage().ref();
-                    const filePath = `student-submissions/${subjectId}/${taskId}/${userData.id}/${Date.now()}_${file.name}`;
-                    
-                    storageRef.child(filePath).put(file)
-                        .then(function(snapshot) {
-                            return snapshot.ref.getDownloadURL();
-                        })
-                        .then(function(downloadURL) {
-                            submissionData.fileURL = downloadURL;
-                            submissionData.fileName = file.name;
-                            
-                            // Save to Firestore
-                            const db = firebase.firestore();
-                            return db.collection('submissions').add(submissionData);
-                        })
-                        .then(function() {
-                            alert('Submission successful!');
-                            form.reset();
-                            closeSubmissionModal();
-                            location.reload();
-                        })
-                        .catch(function(err) {
-                            alert('Error submitting: ' + err.message);
-                        });
-                } else {
-                    // No file, save text only
-                    const db = firebase.firestore();
-                    db.collection('submissions').add(submissionData)
-                        .then(function() {
-                            alert('Submission successful!');
-                            form.reset();
-                            closeSubmissionModal();
-                            location.reload();
-                        })
-                        .catch(function(err) {
-                            alert('Error submitting: ' + err.message);
-                        });
-                }
-            });
-        }
-
-        // Initialize subjects on page load
-        function initializeSubjects() {
-            const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-            const subjectsGrid = document.getElementById('subjectsGrid');
-            const addSubjectBtn = document.getElementById('addSubjectBtn');
-            
-            // Show add button only for instructors
-            if (userData.role === 'instructor') {
-                addSubjectBtn.style.display = 'flex';
-            }
-            
-            if (!subjectsGrid) return;
-            
-            const db = firebase.firestore();
-            
-            // Get all subjects
-            db.collection('subjects').orderBy('createdAt', 'desc').get()
-                .then(function(snapshot) {
-                    subjectsGrid.innerHTML = '';
-                    
-                    if (snapshot.empty) {
-                        subjectsGrid.innerHTML = `
-                            <div class="empty-state">
-                                <i class="fas fa-book-open"></i>
-                                <p>No subjects available yet.</p>
-                                ${userData.role === 'instructor' ? '<button class="btn-primary" onclick="addSubject()"><i class="fas fa-plus"></i> Add Your First Subject</button>' : ''}
-                            </div>
-                        `;
-                        return;
-                    }
-                    
-                    snapshot.forEach(function(doc) {
-                        const subject = doc.data();
-                        const subjectCard = document.createElement('div');
-                        subjectCard.className = 'subject-card';
-                        subjectCard.innerHTML = `
-                            <div class="subject-info">
-                                <h3><i class="fas fa-book"></i> ${escapeHtml(subject.name)}</h3>
-                                <p class="teacher"><i class="fas fa-chalkboard-teacher"></i> ${escapeHtml(subject.teacher)}</p>
-                                <p class="time"><i class="fas fa-clock"></i> ${escapeHtml(subject.time)}</p>
-                                ${subject.description ? `<p class="description"><i class="fas fa-info-circle"></i> ${escapeHtml(subject.description)}</p>` : ''}
-                            </div>
-                            <div class="subject-actions">
-                                <button class="btn-view" onclick="viewSubject('${doc.id}')">
-                                    <i class="fas fa-eye"></i> View
-                                </button>
-                                ${userData.role === 'instructor' ? `
-                                    <button class="btn-add-task" onclick="openTaskModal('${doc.id}', '${escapeHtml(subject.name)}')">
-                                        <i class="fas fa-plus"></i> Add Task
-                                    </button>
-                                    <button class="btn-upload" onclick="openFileUploadModal('${doc.id}', '', 'subject')">
-                                        <i class="fas fa-cloud-upload-alt"></i> Upload
-                                    </button>
-                                ` : ''}
-                            </div>
-                            <div class="tasks-section" id="tasks-${doc.id}">
-                                <!-- Tasks will be loaded here -->
-                            </div>
-                        `;
-                        subjectsGrid.appendChild(subjectCard);
-                        
-                        // Load tasks for this subject
-                        loadTasks(doc.id);
-                    });
-                })
-                .catch(function(err) {
-                    console.error('Error loading subjects:', err);
-                    subjectsGrid.innerHTML = `
-                        <div class="empty-state">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            <p>Error loading subjects. Please try again.</p>
-                        </div>
-                    `;
-                });
-        }
-
-        // Load tasks for a subject
-        function loadTasks(subjectId) {
-            const tasksSection = document.getElementById(`tasks-${subjectId}`);
-            if (!tasksSection) return;
-            
-            const db = firebase.firestore();
-            const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-            
-            db.collection('tasks').where('subjectId', '==', subjectId).orderBy('createdAt', 'desc').get()
-                .then(function(snapshot) {
-                    if (snapshot.empty) {
-                        return;
-                    }
-                    
-                    const tasksList = document.createElement('div');
-                    tasksList.className = 'tasks-list';
-                    tasksList.innerHTML = '<h4><i class="fas fa-tasks"></i> Tasks</h4>';
-                    
-                    snapshot.forEach(function(doc) {
-                        const task = doc.data();
-                        const taskItem = document.createElement('div');
-                        taskItem.className = 'task-item';
-                        
-                        const dueDate = task.dueDate.toDate ? task.dueDate.toDate() : new Date(task.dueDate);
-                        const now = new Date();
-                        const isOverdue = dueDate < now;
-                        const priorityClass = task.priority === 'high' ? 'priority-high' : task.priority === 'medium' ? 'priority-medium' : 'priority-low';
-                        
-                        taskItem.innerHTML = `
-                            <div class="task-header">
-                                <span class="task-title">${escapeHtml(task.title)}</span>
-                                <span class="task-priority ${priorityClass}">${capitalizeFirst(task.priority)}</span>
-                            </div>
-                            ${task.description ? `<p class="task-description">${escapeHtml(task.description)}</p>` : ''}
-                            <div class="task-meta">
-                                <span class="due-date ${isOverdue ? 'overdue' : ''}">
-                                    <i class="fas fa-calendar"></i> Due: ${dueDate.toLocaleDateString()} ${dueDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                </span>
-                            </div>
-                            <div class="task-actions">
-                                ${userData.role === 'instructor' ? `
-                                    <button class="btn-upload" onclick="openFileUploadModal('${subjectId}', '${doc.id}', 'task')">
-                                        <i class="fas fa-cloud-upload-alt"></i> Upload Material
-                                    </button>
-                                ` : `
-                                    <button class="btn-submit" onclick="openSubmissionModal('${doc.id}', '${subjectId}')">
-                                        <i class="fas fa-paper-plane"></i> Submit
-                                    </button>
-                                `}
-                            </div>
-                        `;
-                        tasksList.appendChild(taskItem);
-                    });
-                    
-                    tasksSection.appendChild(tasksList);
-                })
-                .catch(function(err) {
-                    console.error('Error loading tasks:', err);
-                });
-        }
-
-        // View subject details
-        function viewSubject(subjectId) {
-            window.location.href = `Subjects.html?id=${subjectId}`;
-        }
-
-        // Helper functions
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        function capitalizeFirst(str) {
-            if (!str) return '';
-            return str.charAt(0).toUpperCase() + str.slice(1);
-        }
-
-        // Close modals when clicking X
-        document.querySelectorAll('.close').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                this.closest('.modal').style.display = 'none';
-            });
-        });
-    </script>
-</body>
+    <!-- Scripts -->
+    <script type="module" src="firebase.js"></script>
+    <script type="module" src="script.js"></script>
+  </body>
 </html>
