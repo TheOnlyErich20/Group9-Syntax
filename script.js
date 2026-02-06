@@ -226,33 +226,85 @@ function initializeHelp() {
 // SUBJECTS PAGE FUNCTIONALITY
 // =========================
 function initializeSubjects() {
-    const container = document.querySelector('.subjects-container');
+    const listContainer = document.getElementById('subjectsList');
+    const detailsContainer = document.getElementById('subjectDetailsPanel');
     const addBtn = document.getElementById('addSubjectBtn');
     const addModal = document.getElementById('addSubjectModal');
     const addForm = document.getElementById('addSubjectForm');
 
-    if (!container) return;
+    if (!listContainer || !detailsContainer) return;
 
-    let subjects = [];
+    // Dummy data for demonstration
+    let subjects = [
+        { name: "Mathematics", teacher: "Mr. Anderson", time: "08:00 AM - 09:30 AM", description: "Advanced Calculus and Algebra" },
+        { name: "Physics", teacher: "Ms. Curie", time: "10:00 AM - 11:30 AM", description: "Fundamentals of Physics" },
+        { name: "Computer Science", teacher: "Mr. Turing", time: "01:00 PM - 02:30 PM", description: "Algorithms and Data Structures" }
+    ];
+
+    // Dummy lessons data
+    const dummyLessons = [
+        { title: "Introduction to the Course", duration: "45 mins", status: "Completed" },
+        { title: "Chapter 1: Fundamentals", duration: "1 hr 20 mins", status: "In Progress" },
+        { title: "Chapter 2: Advanced Concepts", duration: "55 mins", status: "Locked" },
+        { title: "Midterm Review", duration: "2 hrs", status: "Locked" }
+    ];
 
     // -------------------------
     // RENDER SUBJECTS
     // -------------------------
     function renderSubjects() {
-        container.innerHTML = subjects.map((sub, index) => `
-            <div class="subject-card" data-index="${index}">
-                <div class="subject-icon"><i class="fas fa-book"></i></div>
-                <h3>${sub.name}</h3>
-                <p class="subject-meta">
-                    <i class="fas fa-chalkboard-teacher"></i> ${sub.teacher}
-                </p>
-                <p class="subject-meta">
-                    <i class="fas fa-clock"></i> ${sub.time}
-                </p>
-                <p class="grade-display">${sub.grade || "—"}</p>
-                <p class="subject-badge">${sub.description || ""}</p>
+        listContainer.innerHTML = subjects.map((sub, index) => `
+            <div class="subject-list-item" data-index="${index}">
+                <h4>${sub.name}</h4>
+                <p><i class="fas fa-chalkboard-teacher"></i> ${sub.teacher}</p>
             </div>
         `).join('');
+
+        // Add click listeners
+        document.querySelectorAll('.subject-list-item').forEach(item => {
+            item.addEventListener('click', () => {
+                // Remove active class from all
+                document.querySelectorAll('.subject-list-item').forEach(i => i.classList.remove('active'));
+                // Add active to clicked
+                item.classList.add('active');
+                // Show details
+                renderSubjectDetails(item.dataset.index);
+            });
+        });
+    }
+
+    // -------------------------
+    // RENDER DETAILS
+    // -------------------------
+    function renderSubjectDetails(index) {
+        const sub = subjects[index];
+        if (!sub) return;
+
+        detailsContainer.innerHTML = `
+            <div class="detail-header">
+                <h2>${sub.name}</h2>
+                <div class="detail-meta">
+                    <span><i class="fas fa-chalkboard-teacher"></i> ${sub.teacher}</span>
+                    <span><i class="fas fa-clock"></i> ${sub.time}</span>
+                </div>
+                <p style="margin-top: 15px; color: var(--text-secondary);">${sub.description || "No description available."}</p>
+            </div>
+
+            <div class="lessons-container">
+                <h3><i class="fas fa-list-ul"></i> Lessons</h3>
+                ${dummyLessons.map(lesson => `
+                    <div class="lesson-item">
+                        <div class="lesson-info">
+                            <h4>${lesson.title}</h4>
+                            <p><i class="fas fa-clock"></i> ${lesson.duration} • ${lesson.status}</p>
+                        </div>
+                        <button class="btn-start-lesson">
+                            ${lesson.status === 'Locked' ? '<i class="fas fa-lock"></i>' : '<i class="fas fa-play"></i> Start'}
+                        </button>
+                    </div>
+                `).join('')}
+            </div>
+        `;
     }
 
     // -------------------------
@@ -285,7 +337,6 @@ function initializeSubjects() {
             name: document.getElementById('newSubjectName').value.trim(),
             teacher: document.getElementById('newTeacherName').value.trim(),
             time: document.getElementById('newSubjectTime').value.trim(),
-            grade: document.getElementById('newSubjectGrade').value.trim(),
             description: document.getElementById('newSubjectDescription').value.trim()
         };
 
@@ -296,27 +347,8 @@ function initializeSubjects() {
         addModal.style.display = 'none';
     });
 
-    // -------------------------
-    // SUBJECT DETAILS MODAL
-    // -------------------------
-    const subjectModal = document.getElementById('subjectModal');
-
-    container.addEventListener('click', e => {
-        const card = e.target.closest('.subject-card');
-        if (!card) return;
-
-        const index = card.dataset.index;
-        const sub = subjects[index];
-        if (!sub) return;
-
-        document.getElementById('modalTitle').textContent = sub.name;
-        document.getElementById('modalTeacher').textContent = sub.teacher;
-        document.getElementById('modalTime').textContent = sub.time;
-        document.getElementById('modalGrade').textContent = sub.grade || "—";
-        document.getElementById('modalDescription').textContent = sub.description || "";
-
-        subjectModal.style.display = 'block';
-    });
+    // Initial Render
+    renderSubjects();
 }
 
 // =========================
