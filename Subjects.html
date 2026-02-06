@@ -92,13 +92,13 @@
             <p>Track your school subjects and grades</p>
           </div>
 
-          <!-- Split Layout -->
+          <!-- New Split Layout -->
           <div class="subjects-content-wrapper">
             <!-- Left Sidebar: List -->
             <div class="subjects-sidebar">
               <div class="sidebar-header">
                 <h3>Subject List</h3>
-                <button id="addSubjectBtn" class="btn-add-mini" title="Add Subject">
+                <button id="addSubjectBtn" class="btn-add-mini instructor-only" title="Add Subject">
                   <i class="fas fa-plus"></i>
                 </button>
               </div>
@@ -116,7 +116,7 @@
             </div>
           </div>
 
-          <!-- Add Subject Modal -->
+          <!-- Add Subject Modal (Kept) -->
           <div class="modal" id="addSubjectModal">
             <div class="modal-content">
               <span class="close">&times;</span>
@@ -124,7 +124,7 @@
               <div class="modal-body">
                 <h2>Add New Subject</h2>
 
-                <form id="addSubjectForm">
+                <form id="addSubjectForm" class="instructor-form">
                   <div class="form-group">
                     <label>Subject Name</label>
                     <input type="text" id="newSubjectName" required placeholder="e.g. Mathematics" />
@@ -152,188 +152,10 @@
               </div>
             </div>
           </div>
-
-          <!-- Edit Subject Modal -->
-          <div class="modal" id="editSubjectModal">
-            <div class="modal-content">
-              <span class="close">&times;</span>
-
-              <div class="modal-body">
-                <h2>Edit Subject</h2>
-
-                <form id="editSubjectForm">
-                  <input type="hidden" id="editSubjectId" />
-
-                  <div class="form-group">
-                    <label>Subject Name</label>
-                    <input type="text" id="editSubjectName" required placeholder="e.g. Mathematics" />
-                  </div>
-
-                  <div class="form-group">
-                    <label>Teacher</label>
-                    <input type="text" id="editTeacherName" required placeholder="e.g. Mr. Anderson" />
-                  </div>
-
-                  <div class="form-group">
-                    <label>Time</label>
-                    <input type="text" id="editSubjectTime" required placeholder="e.g. 08:00 AM - 09:30 AM" />
-                  </div>
-                  
-                  <div class="form-group">
-                    <label>Description</label>
-                    <textarea id="editSubjectDescription" rows="5" placeholder="Brief description of the subject..."></textarea>
-                  </div>
-
-                  <button type="submit" class="btn-add-subject">
-                    <i class="fas fa-save"></i> Update Subject
-                  </button>
-                </form>
-              </div>
-            </div>
-          </div>
-
-          <!-- Add Task Modal -->
-          <div class="modal" id="addTaskModal">
-            <div class="modal-content">
-              <span class="close">&times;</span>
-
-              <div class="modal-body">
-                <h2>Add New Task</h2>
-
-                <form id="addTaskForm">
-                  <div class="form-group">
-                    <label>Task Title</label>
-                    <input type="text" id="newTaskTitle" required placeholder="e.g. Homework 1" />
-                  </div>
-
-                  <div class="form-group">
-                    <label>Description</label>
-                    <textarea id="newTaskDescription" rows="3" placeholder="Task description..."></textarea>
-                  </div>
-
-                  <div class="form-group">
-                    <label>Due Date</label>
-                    <input type="datetime-local" id="newTaskDueDate" required />
-                  </div>
-
-                  <div class="form-group">
-                    <label>Max Score</label>
-                    <input type="number" id="newTaskMaxScore" value="100" min="1" required />
-                  </div>
-
-                  <input type="hidden" id="currentSubjectId" />
-
-                  <button type="submit" class="btn-add-subject">
-                    <i class="fas fa-plus"></i> Add Task
-                  </button>
-                </form>
-              </div>
-            </div>
-          </div>
-
-          <!-- Edit Task Modal -->
-          <div class="modal" id="editTaskModal">
-            <div class="modal-content">
-              <span class="close">&times;</span>
-
-              <div class="modal-body">
-                <h2>Edit Task</h2>
-
-                <form id="editTaskForm">
-                  <input type="hidden" id="editTaskId" />
-                  <input type="hidden" id="editTaskSubjectId" />
-
-                  <div class="form-group">
-                    <label>Task Title</label>
-                    <input type="text" id="editTaskTitle" required placeholder="e.g. Homework 1" />
-                  </div>
-
-                  <div class="form-group">
-                    <label>Description</label>
-                    <textarea id="editTaskDescription" rows="3" placeholder="Task description..."></textarea>
-                  </div>
-
-                  <div class="form-group">
-                    <label>Due Date</label>
-                    <input type="datetime-local" id="editTaskDueDate" required />
-                  </div>
-
-                  <div class="form-group">
-                    <label>Max Score</label>
-                    <input type="number" id="editTaskMaxScore" value="100" min="1" required />
-                  </div>
-
-                  <button type="submit" class="btn-add-subject">
-                    <i class="fas fa-save"></i> Update Task
-                  </button>
-                </form>
-              </div>
-            </div>
-          </div>
-
-          <!-- Upload File Modal (Instructor) -->
-          <div class="modal" id="uploadModal">
-            <div class="modal-content">
-              <span class="close">&times;</span>
-
-              <div class="modal-body">
-                <h2>Upload File</h2>
-
-                <form id="uploadForm">
-                  <input type="hidden" id="uploadSubjectId" />
-                  <input type="hidden" id="uploadTaskId" />
-
-                  <div class="form-group">
-                    <label>Select File</label>
-                    <input type="file" id="uploadFile" required />
-                    <small style="color: #aaa;">Max file size: 10MB (PDF, DOC, DOCX, Images)</small>
-                  </div>
-
-                  <button type="submit" class="btn-add-subject">
-                    <i class="fas fa-cloud-upload-alt"></i> Upload
-                  </button>
-                </form>
-              </div>
-            </div>
-          </div>
-
-          <!-- Submission Modal -->
-          <div class="modal" id="submissionModal">
-            <div class="modal-content">
-              <span class="close">&times;</span>
-
-              <div class="modal-body">
-                <h2>Submit Task</h2>
-
-                <form id="submissionForm">
-                  <div class="form-group">
-                    <label>Your Answer</label>
-                    <textarea id="submissionText" rows="5" placeholder="Enter your answer..."></textarea>
-                  </div>
-
-                  <div class="form-group">
-                    <label>Attach File (Optional)</label>
-                    <input type="file" id="submissionFile" />
-                  </div>
-
-                  <input type="hidden" id="submitTaskId" />
-                  <input type="hidden" id="submitSubjectId" />
-
-                  <button type="submit" class="btn-add-subject">
-                    <i class="fas fa-paper-plane"></i> Submit
-                  </button>
-                </form>
-              </div>
-            </div>
-          </div>
         </section>
       </main>
     </div>
 
     <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase.js"></script>
     <script type="module" src="firebase.js"></script>
-    <script type="module" src="script.js"></script>
-  </body>
-</html>
+    <script type="module" src=
