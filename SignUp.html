@@ -276,6 +276,55 @@
       }
     </style>
 
+    <!-- Theme Script - Must load before other scripts -->
+    <script>
+      // Initialize theme immediately to prevent flash
+      (function() {
+        const theme = localStorage.getItem("theme") || "dark";
+        if (theme === "light") {
+          document.body.classList.add("light-mode");
+        }
+      })();
+    </script>
+
+    <!-- Fix password toggle alignment -->
+    <style>
+      .form-group {
+        position: relative;
+        margin-bottom: 20px;
+      }
+      
+      .form-group label {
+        display: block;
+        color: var(--text-secondary);
+        margin-bottom: 8px;
+        font-weight: 600;
+        font-size: 0.95em;
+      }
+      
+      .form-group input[type="password"] {
+        padding-right: 45px;
+      }
+      
+      .toggle-password {
+        position: absolute;
+        right: 15px;
+        top: 38px;
+        transform: translateY(-50%);
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: 0.3s ease;
+      }
+      
+      body.light-mode .toggle-password {
+        color: #444444;
+      }
+      
+      body.light-mode .toggle-password:hover {
+        color: #0066a1;
+      }
+    </style>
+
     <script type="module" src="script.js"></script>
   </body>
 </html>
