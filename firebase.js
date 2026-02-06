@@ -51,5 +51,6 @@ export {
     updateDoc, 
     deleteDoc, 
     getDoc,
-    serverTimestamp 
+    serverTimestamp,
+    onSnapshot
 };
