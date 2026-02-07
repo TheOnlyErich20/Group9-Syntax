@@ -1,56 +1,21 @@
 // Import modular Firebase API
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-import { 
-    getFirestore, 
-    collection, 
-    addDoc, 
-    getDocs, 
-    query, 
-    where, 
-    doc, 
-    updateDoc, 
-    deleteDoc, 
-    getDoc,
-    serverTimestamp,
-    onSnapshot
-} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
 // Your Firebase config
 const firebaseConfig = {
-    apiKey: "AIzaSyAx3BTNnEDw4AXEkk5GVR5NLeGjsfVAmlA",
-    authDomain: "darkbroads.firebaseapp.com",
-    projectId: "darkbroads",
-    storageBucket: "darkbroads.firebasestorage.app",
-    messagingSenderId: "271741371558",
-    appId: "1:271741371558:web:45372043bfe9d3205ee067",
-    measurementId: "G-SLEM50XYCK"
+  apiKey: "AIzaSyCf9rifuGfNqcfhOZK8Lygt43SshKaCKrQ",
+  authDomain: "group9-syntax-9fb66.firebaseapp.com",
+  projectId: "group9-syntax-9fb66",
+  storageBucket: "group9-syntax-9fb66.firebasestorage.app",
+  messagingSenderId: "463795941537",
+  appId: "1:463795941537:web:37fa287c7c1e50b69040e0",
+  measurementId: "G-YFBM5P78DX"
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
 
-// Expose globally for non-module scripts
-window.firebaseApp = app;
-window.firebaseAuth = auth;
-window.firebaseDb = db;
-window.firebaseFirestore = db;
-
-// Export all Firestore functions for use in other scripts
-export { 
-    auth, 
-    db, 
-    collection, 
-    addDoc, 
-    getDocs, 
-    query, 
-    where, 
-    doc, 
-    updateDoc, 
-    deleteDoc, 
-    getDoc,
-    serverTimestamp,
-    onSnapshot
-};
+// Export auth to use in other scripts
+export { auth };
