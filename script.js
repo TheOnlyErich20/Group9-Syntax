@@ -49,20 +49,12 @@ function setMessage(id, msg, success = false) {
     el.style.display = "block";
     el.style.color = success ? "#51cf66" : "#ff6b6b";
 }
+
 // =========================
 // LOGIN FUNCTIONALITY
 // =========================
 function initializeLogin() {
     const loginForm = document.getElementById("loginForm");
-
-    if (loginForm) {
-        const header = document.querySelector("header");
-        if (header) header.style.display = "none";
-
-        const themeBtns = document.querySelectorAll(".theme-toggle, .theme-btn, .theme-toggle-btn, #darkModeBtn, #lightModeBtn, #darkThemeBtn, #lightThemeBtn");
-        themeBtns.forEach(btn => btn.style.display = "none");
-    }
-
     loginForm?.addEventListener("submit", async e => {
         e.preventDefault();
         const email = document.getElementById("email").value.trim();
@@ -281,6 +273,7 @@ function initializeSubjects() {
         });
     }
 
+    // -------------------------
     // RENDER DETAILS
     // -------------------------
     function renderSubjectDetails(index) {
